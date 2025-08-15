@@ -36,11 +36,11 @@ import java.util.List;
  */
 public final class ReservoirSampler<T> {
 
-    private final Object[] reservoir;           // fixed-size sample buffer
+    private final Object[] reservoir;
     private final DeterministicRandom rng;
 
-    private long seen = 0L;                     // how many items were offered
-    private int size = 0;                       // how many slots are currently filled (<= capacity)
+    private long seen = 0L;
+    private int size = 0;
 
     /**
      * @param capacity reservoir size k (> 0)
@@ -73,14 +73,12 @@ public final class ReservoirSampler<T> {
         seen++;
         final int cap = reservoir.length;
 
-        // Fast path: still filling
         if (size < cap) {
             reservoir[size++] = item;
-            return; // if-gate: no further work needed
+            return;
         }
 
-        // Sampling path
-        final long j = (long) (rng.nextUnitDouble() * seen); // j in [0, seen)
+        final long j = (long) (rng.nextUnitDouble() * seen);
         if (j < cap) {
             reservoir[(int) j] = item;
         }
