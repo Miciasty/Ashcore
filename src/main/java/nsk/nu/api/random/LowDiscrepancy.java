@@ -3,6 +3,8 @@ package nsk.nu.api.random;
 import nsk.nu.api.math.Double2;
 import nsk.nu.api.math.Vector3;
 
+import static nsk.nu.api.geometry.OrthonormalBasis.getVector3;
+
 /** Low-discrepancy helpers and mappings from [0,1)^2 to common domains. */
 public final class LowDiscrepancy {
     private LowDiscrepancy() {}
@@ -76,11 +78,6 @@ public final class LowDiscrepancy {
         Vector3 a = Math.abs(n.x()) > 0.5 ? new Vector3(0,1,0) : new Vector3(1,0,0);
         Vector3 t = a.cross(n).normalized();
         Vector3 b = n.cross(t);
-        double x = local.x(), y = local.y(), z = local.z();
-        return new Vector3(
-                t.x()*x + n.x()*y + b.x()*z,
-                t.y()*x + n.y()*y + b.y()*z,
-                t.z()*x + n.z()*y + b.z()*z
-        );
+        return getVector3(local, t, n, b);
     }
 }
