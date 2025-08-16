@@ -1,9 +1,9 @@
 package nsk.nu.ashcore;
 
-import nsk.nu.api.collision.CollisionTests;
-import nsk.nu.api.geometry.AxisAlignedBox;
-import nsk.nu.api.geometry.Ray;
-import nsk.nu.api.math.Vector3;
+import nsk.nu.ashcore.api.collision.CollisionTests;
+import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
+import nsk.nu.ashcore.api.geometry.Ray;
+import nsk.nu.ashcore.api.math.Vector3;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
