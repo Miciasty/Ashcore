@@ -4,10 +4,10 @@ Foundation math & utilities for game/engine plugins: vectors, geometry, collisio
 
 > [!NOTE]
 > **Ashcore** provides platform-agnostic math and primitives.
->– Grid and voxel see **Ashgrid**
->– Ray tracing and acceleration see **Ashtrace**
->– Pathfinding and graphs see **Ashnav**
->– Coordinate systems and transforms see **Ashspace**
+>- Grid and voxel see **Ashgrid**.
+>- Ray tracing and acceleration see **Ashtrace**.
+>- Pathfinding and graphs see **Ashnav**.
+>- Coordinate systems and transforms see **Ashspace**.
 
 ---
 
