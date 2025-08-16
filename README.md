@@ -99,23 +99,35 @@ Requires **Java 21+**.
 ## Quick start
 
 ```java
+import nsk.nu.ashcore.api.random.DeterministicRandom;
+import nsk.nu.ashcore.api.noise.PerlinNoise;
+import nsk.nu.ashcore.api.noise.FractalNoise;
+import nsk.nu.ashcore.api.geometry.Ray;
+import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
+import nsk.nu.ashcore.api.math.Vector3;
+import nsk.nu.ashcore.api.collision.CollisionTests;
+import nsk.nu.ashcore.api.random.Halton2DSequence;
+import nsk.nu.ashcore.api.math.Double2;
+import nsk.nu.ashcore.api.random.LowDiscrepancy;
+import nsk.nu.ashcore.api.stats.ExponentialMovingAverage;
+
 // RNG + noise
-var rng = new nsk.nu.ashcore.api.random.DeterministicRandom(1337L);
-var perlin = new nsk.nu.ashcore.api.noise.PerlinNoise(rng);
-double h = nsk.nu.ashcore.api.noise.FractalNoise.fbm(perlin, x*0.02, z*0.02, 5, 2.0, 0.5);
+DeterministicRandom rng = new DeterministicRandom(1337L);
+PerlinNoise perlin = new PerlinNoise(rng);
+double h = FractalNoise.fbm(perlin, x * 0.02, z * 0.02, 5, 2.0, 0.5);
 
 // Ray vs box (slab)
-var ray = new nsk.nu.ashcore.api.geometry.Ray(new Vector3(0,1,0), new Vector3(1,0,0));
-var box = new nsk.nu.ashcore.api.geometry.AxisAlignedBox(new Vector3(2,0,-1), new Vector3(3,2,1));
-double t = nsk.nu.ashcore.api.collision.CollisionTests.rayVsBoxT(ray, box);
+Ray ray = new Ray(new Vector3(0, 1, 0), new Vector3(1, 0, 0));
+AxisAlignedBox box = new AxisAlignedBox(new Vector3(2, 0, -1), new Vector3(3, 2, 1));
+double t = CollisionTests.rayVsBoxT(ray, box);
 
 // Low-discrepancy hemisphere direction (Y-up)
-var seq = new nsk.nu.ashcore.api.random.Halton2DSequence(); // bases 2 & 3
-var uv = seq.nextUnitSquare();
-var dir = nsk.nu.ashcore.api.random.LowDiscrepancy.mapToUniformHemisphere(uv.x(), uv.y());
+Halton2DSequence seq = new Halton2DSequence(); // bases 2 & 3
+Double2 uv = seq.nextUnitSquare();
+Vector3 dir = LowDiscrepancy.mapToUniformHemisphere(uv.x(), uv.y());
 
 // Online stats
-var ema = new nsk.nu.ashcore.api.stats.ExponentialMovingAverage(0.2);
+ExponentialMovingAverage ema = new ExponentialMovingAverage(0.2);
 double smooth = ema.add(sample);
 ```
 
