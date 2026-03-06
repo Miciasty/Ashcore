@@ -1,76 +1,37 @@
 # Ashcore
 
-Foundation math & utilities for game/engine plugins: vectors, geometry, collisions on primitives, RNG, low-discrepancy sequences, noise, online stats.
+Low-level, deterministic Java foundation library for math, geometry, primitive collisions, sampling, noise, hashing, and online statistics.
 
 > [!NOTE]
-> **Ashcore** provides platform-agnostic math and primitives.
->- Grid and voxel see **Ashgrid**.
->- Ray tracing and acceleration see **Ashtrace**.
->- Pathfinding and graphs see **Ashnav**.
->- Coordinate systems and transforms see **Ashspace**.
+> **Ashcore** is the core layer of Blackframe.
+> For grid/voxel operations use **Ashgrid**.
+> For acceleration structures and advanced tracing use **Ashtrace**.
+> For pathfinding use **Ashnav**.
+> For coordinate-space systems use **Ashspace**.
 
 ---
 
-## Table of contents
+## What is Ashcore
 
-- [What is it?](#what-is-it)
-- [Why use it](#why-use-it)
-- [Features](#features)
-- [Installation](#installation)
-- [Quick start](#quick-start)
-- [API highlights](#api-highlights)
-- [Performance notes](#performance-notes)
-- [Project status](#project-status)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
+**Ashcore** provides the reusable base that most engines and plugins keep rewriting:
+- immutable vector/matrix math,
+- geometric primitives and primitive-level collision tests,
+- deterministic random and low-discrepancy sampling,
+- deterministic hash/noise helpers,
+- online statistical estimators,
+- minimal SPI utilities for pluggable implementations.
+
+The scope is intentionally low-level and engine-agnostic.
 
 ---
 
-## What is it?
+## Design goals
 
-**Ashcore** is a small, pragmatic Java library with the building blocks most engines end up rewriting: vector math, geometric primitives, primitive-level collisions, deterministic random sampling, low-discrepancy sequences, continuous/discrete noise, and online statistics. It stays low-level and fast so higher-level libraries can compose it cleanly.
-
----
-
-## Why use it
-
-- **Consistent primitives.** `Vector3`, `Quaternion`, `Ray`, `AxisAlignedBox`, `Plane`, etc.
-- **Deterministic random.** Seeded RNG, alias sampling, Halton sequences for stable runs.
-- **No platform baggage.** Pure Java 21; drop it into plugins or libraries.
-- **Good defaults.** Branch-light helpers, zero allocations in hot loops where practical.
-
----
-
-## Features
-
-- **Math**
-    - `Vector3`, `Quaternion`, `Angles`/`AngleUtil`, `MathUtil`, `DivMod`
-    - Integer coords: `Int2`, `Int3`; ranges: `IntRange`, `DoubleRange`
-    - Stable sums: `KahanSummation`
-- **Geometry**
-    - Primitives: `Ray`, `AxisAlignedBox`, `Plane`, `Segment3`, `Sphere`, `Capsule`
-    - Helpers: `GeometryUtils` (project/reflect/closest point), `Boxes` (union/expand/overlaps)
-    - `OrthonormalBasis` (TBN) from a single normal
-- **Collisions on primitives**
-    - Slab `rayVsBox` (+ `Hit`), `CollisionUtils` (ray-plane, closest point), `SweptAABB` (continuous)
-- **Interpolation**
-    - `Easing`, `CatmullRom` (scalar & `Vector3`)
-- **RNG & sampling**
-    - `DeterministicRandom` (SplitMix64), `Permutation` (Fisher–Yates)
-    - Weighted choices: `WeightedPicker` (O(n)), `WeightedSampler` (alias, build O(n), sample O(1))
-    - Low-discrepancy: `HaltonSequence`, `Halton2DSequence`, `Halton3DSequence`
-    - Mappings: unit square/cube → disk/sphere/hemisphere/cone
-    - `SeedSequence` (derive stable seeds by tag), `Hash64`, `Morton` (2D/3D Z-order)
-- **Noise**
-    - `PerlinNoise` (2D/3D), `FractalNoise` (fbm/turbulence/ridge), `HashGridNoise` (value noise on int grid)
-- **Online stats**
-    - `RunningStats`, `ExponentialMovingAverage`, `WindowedMean`
-    - `SlidingWindowMinMax` (O(1) amort.), `ReservoirSampler` (Alg. R), `P2Quantile` (online percentile)
-- **Timing & small utilities**
-    - `RateLimiter`, `Debouncer`, `CooldownMap`
-- **Color**
-    - `ColorUtil` (RGB↔HSV)
+- Deterministic behavior from explicit seeds.
+- Small, composable APIs with stable contracts.
+- Immutable value types for safe reuse.
+- No platform/runtime lock-in.
+- Foundation-first: extend by adding new fundamentals, not by rewriting old ones.
 
 ---
 
@@ -86,7 +47,7 @@ Maven:
 </dependency>
 ```
 
-Gradle (Kotlin):
+Gradle (Kotlin DSL):
 
 ```kts
 implementation("nsk.nu:Ashcore:1.0")
@@ -96,93 +57,144 @@ Requires **Java 21+**.
 
 ---
 
+## Feature map
+
+### Math (`api.math`)
+- `Vector2`, `Vector3`, `Vector4`
+- `Vector2i`, `Vector3i`, `Vector4i`
+- `Matrix2`, `Matrix3`, `Matrix4`
+- `Quaternion`
+- `Angles`, `DivMod`, `MathUtil`
+- `IntRange`, `DoubleRange`
+- `KahanSummation`
+- `NumericTolerance`
+
+### Geometry (`api.geometry`)
+- `AxisAlignedBox` (3D AABB), `AxisAlignedRect` (2D AABB)
+- `Ray`, `Plane`, `Segment3`, `Sphere`, `Capsule`
+- `GeometryUtils`, `Boxes`, `OrthonormalBasis`
+
+### Collision (`api.collision`)
+- `CollisionTests` (e.g. ray vs AABB slab)
+- `CollisionUtils` (primitive helpers)
+- `SweptAABB` (continuous moving-AABB test)
+- `Hit`
+
+### Random & sampling (`api.random`)
+- `DeterministicRandom` + `DeterministicRandoms`
+- `HaltonSequence`, `Halton2DSequence`, `Halton3DSequence`
+- `LowDiscrepancy` mappings (disk/sphere/hemisphere/cone)
+- `Distributions`
+- `WeightedPicker`, `WeightedSampler`
+- `Permutation`
+- `SeedSequence`
+
+### Noise (`api.noise`)
+- `Noise2D`, `Noise3D`
+- `PerlinNoise`
+- `FractalNoise` (fbm/turbulence/ridge)
+- `HashGridNoise`
+
+### Hashing (`api.hash`)
+- `Hash64`
+- `Morton` (2D/3D Z-order encode/decode)
+
+### Statistics (`api.stats`)
+- `RunningStats`
+- `ExponentialMovingAverage`
+- `WindowedMean`
+- `SlidingWindowMinMax`
+- `ReservoirSampler`
+- `P2Quantile`
+
+### SPI (`api.spi`)
+- `Identified`
+- `ServiceRegistry`
+
+---
+
 ## Quick start
 
 ```java
-import nsk.nu.ashcore.implementation.random.SplitMix64Random;
-import nsk.nu.ashcore.api.random.DeterministicRandom;
-import nsk.nu.ashcore.api.noise.PerlinNoise;
-import nsk.nu.ashcore.api.noise.FractalNoise;
-import nsk.nu.ashcore.api.geometry.Ray;
-import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
-import nsk.nu.ashcore.api.math.Vector3;
 import nsk.nu.ashcore.api.collision.CollisionTests;
+import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
+import nsk.nu.ashcore.api.geometry.Ray;
+import nsk.nu.ashcore.api.math.Vector2;
+import nsk.nu.ashcore.api.math.Vector3;
+import nsk.nu.ashcore.api.noise.FractalNoise;
+import nsk.nu.ashcore.api.noise.PerlinNoise;
+import nsk.nu.ashcore.api.random.DeterministicRandom;
+import nsk.nu.ashcore.api.random.DeterministicRandoms;
 import nsk.nu.ashcore.api.random.Halton2DSequence;
-import nsk.nu.ashcore.api.math.Double2;
 import nsk.nu.ashcore.api.random.LowDiscrepancy;
 import nsk.nu.ashcore.api.stats.ExponentialMovingAverage;
 
-// RNG + noise
-DeterministicRandom rng = new SplitMix64Random(1337L);
+// Deterministic RNG + noise
+DeterministicRandom rng = DeterministicRandoms.defaultGenerator(1337L);
 PerlinNoise perlin = new PerlinNoise(rng);
-double h = FractalNoise.fbm(perlin, x * 0.02, z * 0.02, 5, 2.0, 0.5);
 
-// Ray vs box (slab)
-Ray ray = new Ray(new Vector3(0, 1, 0), new Vector3(1, 0, 0));
-AxisAlignedBox box = new AxisAlignedBox(new Vector3(2, 0, -1), new Vector3(3, 2, 1));
+double x = 128.0;
+double z = 64.0;
+double height = FractalNoise.fbm(perlin, x * 0.02, z * 0.02, 5, 2.0, 0.5);
+
+// Primitive collision
+Ray ray = new Ray(new Vector3(-2, 0, 0), new Vector3(1, 0, 0));
+AxisAlignedBox box = new AxisAlignedBox(new Vector3(0, -1, -1), new Vector3(1, 1, 1));
 double t = CollisionTests.rayVsBoxT(ray, box);
 
-// Low-discrepancy hemisphere direction (Y-up)
-Halton2DSequence seq = new Halton2DSequence(); // bases 2 & 3
-Double2 uv = seq.nextUnitSquare();
-Vector3 dir = LowDiscrepancy.mapToUniformHemisphere(uv.x(), uv.y());
+// Low-discrepancy sampling
+Halton2DSequence seq = new Halton2DSequence(); // bases 2 and 3
+Vector2 uv = seq.nextUnitSquare();
+Vector3 hemisphereDir = LowDiscrepancy.mapToUniformHemisphere(uv.x(), uv.y());
 
-// Online stats
+// Online smoothing
 ExponentialMovingAverage ema = new ExponentialMovingAverage(0.2);
-double smooth = ema.add(sample);
+double smoothed = ema.add(42.0);
 ```
 
 ---
 
 ## API highlights
 
-- Math: `Vector3`, `Quaternion.slerp(...)`, `Angles.deltaRadians(...)`, `DivMod.floorMod(...)`
-- Geometry: `OrthonormalBasis.fromNormal(...)`, `GeometryUtils.reflect(...)`, `Boxes.overlaps(...)`
-- Collisions: `CollisionTests.rayVsBoxT(...)`, `SweptAABB.test(...)`
-- RNG & sampling: `WeightedSampler.build(weights).sampleIndex(rng)`, `Permutation.shuffle(int[])`
-- Low-discrepancy: `Halton2DSequence.nextConcentricDisk()`, `Halton3DSequence.nextHemisphereYUp()`
+- Math: `Quaternion.slerp(...)`, `Angles.deltaRadians(...)`, `Matrix4.inverseAffine(...)`
+- Geometry: `OrthonormalBasis.fromNormal(...)`, `GeometryUtils.closestPointOnSegment(...)`
+- Collision: `CollisionTests.rayVsBoxT(...)`, `SweptAABB.test(...)`
+- Sampling: `Halton2DSequence.nextConcentricDisk()`, `LowDiscrepancy.mapToUniformCone(...)`
+- Random: `DeterministicRandoms.defaultGenerator(...)`, `WeightedSampler.build(...).sampleIndex(...)`
 - Noise: `PerlinNoise.sample(...)`, `FractalNoise.fbm(...)`
-- Stats: `SlidingWindowMinMax.add(...)`, `P2Quantile.add(...).estimate()`
-- Utils: `RateLimiter.tryAcquire(System::nanoTime)`, `SeedSequence.derive("feature-x")`
+- Stats: `P2Quantile.add(...)/estimate()`, `SlidingWindowMinMax.add(...)`
+- SPI: `ServiceRegistry.of(...)`, `ServiceRegistry.require(...)`
 
 ---
 
 ## Performance notes
 
-- Most operations are **O(1)**; helpers avoid allocations in inner loops.
-- **WeightedSampler**: build **O(n)**, each sample **O(1)**. Prefer it when weights are stable and you draw many times.
-- **HaltonSequence**: `next()` is **amortized O(1)**; random access `halton(n, base)` is **O(log n)** by definition.
-- **FractalNoise**: **O(octaves)** per sample; pick octaves accordingly.
+- Most methods are O(1) and allocation-light.
+- `WeightedSampler`: build O(n), sample O(1).
+- `HaltonSequence.next()`: amortized O(1).
+- `FractalNoise`: O(octaves) per sample.
 
 ---
 
-## Project status
+## Stability policy
 
-- ✅ Stable math/geometry primitives
-- ✅ Primitive-level collisions (slab, swept AABB)
-- ✅ Deterministic RNG & samplers (alias, Halton 2D/3D)
-- ✅ Noise (Perlin/FBM) and online stats (EMA, P², reservoir)
-- ✅ Hashing (64-bit), Morton 2D/3D, seed derivation
-
----
-
-## Roadmap
-
-- JMH micro-benchmarks for hot paths
-- Optional cosine-weighted hemisphere mapping helper
-- Package-level JavaDoc summaries
+- Public API under `nsk.nu.ashcore.api.*` is the stability surface.
+- Behavioral fixes are allowed.
+- Breaking API changes should be introduced only in major versions.
 
 ---
 
 ## Contributing
 
 - Java 21+, JUnit 5.
-- Keep `api/*` small and clear; implementation classes are `final` and allocation-aware.
-- Add tests (GIVEN–WHEN–THEN) where non-obvious.
-- Run `mvn -DskipTests=false clean verify` before pushing.
+- Keep contracts explicit and deterministic.
+- Keep comments precise and synchronized with behavior.
+- Prefer small, focused additions to core primitives.
+- Run full verification before release.
 
 ---
 
 ## License
 
-Apache-2.0 Copyright 2025 Mateusz Aftanas
+Apache-2.0  
+Copyright 2025 Mateusz Aftanas
