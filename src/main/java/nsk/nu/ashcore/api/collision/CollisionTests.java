@@ -2,6 +2,7 @@ package nsk.nu.ashcore.api.collision;
 
 import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
 import nsk.nu.ashcore.api.geometry.Ray;
+import nsk.nu.ashcore.api.math.NumericTolerance;
 import nsk.nu.ashcore.api.math.Vector3;
 
 /**
@@ -16,35 +17,43 @@ public final class CollisionTests {
      * @return t of the first intersection or {@code Double.POSITIVE_INFINITY} if no hit
      */
     public static double rayVsBoxT(Ray ray, AxisAlignedBox box) {
-        var r = rayBoxSlab(ray, box);
-        return r.hit ? r.tMin : Double.POSITIVE_INFINITY;
+        SlabResult r = rayBoxSlab(ray, box);
+        if (!r.hit || r.tExit < 0.0) return Double.POSITIVE_INFINITY;
+        return Math.max(0.0, r.tEnter);
     }
 
     /**
      * Full ray vs box hit information: t, intersection point and face normal.
      */
     public static Hit rayVsBoxHit(Ray ray, AxisAlignedBox box) {
-        var r = rayBoxSlab(ray, box);
-        if (!r.hit) return new Hit(Double.POSITIVE_INFINITY, null, null);
+        SlabResult r = rayBoxSlab(ray, box);
+        if (!r.hit || r.tExit < 0.0) return new Hit(Double.POSITIVE_INFINITY, null, null);
 
-        Vector3 point = ray.at(r.tMin);
-        Vector3 normal = switch (r.axis) {
-            case 0 -> new Vector3(r.sign, 0, 0);
-            case 1 -> new Vector3(0, r.sign, 0);
-            default -> new Vector3(0, 0, r.sign);
+        boolean startedInside = r.tEnter < 0.0;
+        double t = startedInside ? 0.0 : r.tEnter;
+        int axis = startedInside ? r.exitAxis : r.enterAxis;
+        int sign = startedInside ? r.exitSign : r.enterSign;
+
+        Vector3 point = ray.at(t);
+        Vector3 normal = switch (axis) {
+            case 0 -> new Vector3(sign, 0, 0);
+            case 1 -> new Vector3(0, sign, 0);
+            case 2 -> new Vector3(0, 0, sign);
+            default -> null;
         };
-        return new Hit(r.tMin, point, normal);
+        return new Hit(t, point, normal);
     }
+
 
     /**
      * Core slab computation shared by {@link #rayVsBoxT} and {@link #rayVsBoxHit}.
      * No arrays are allocated; components are accessed by axis index.
      */
     private static SlabResult rayBoxSlab(Ray ray, AxisAlignedBox box) {
-        double tMin = 0.0;
-        double tMax = Double.POSITIVE_INFINITY;
-        int hitAxis = -1;
-        int hitSign = 0;
+        double tEnter = 0.0;
+        double tExit = Double.POSITIVE_INFINITY;
+        int enterAxis = -1, enterSign = 0;
+        int exitAxis = -1, exitSign = 0;
 
         for (int axis = 0; axis < 3; axis++) {
             double o = comp(ray.origin(), axis);
@@ -52,21 +61,29 @@ public final class CollisionTests {
             double min = comp(box.min(), axis);
             double max = comp(box.max(), axis);
 
-            double invD = 1.0 / d;
-            double t0 = (min - o) * invD;
-            double t1 = (max - o) * invD;
-            int sign0 = invD >= 0 ? -1 : 1;
-
-            if (invD < 0) {
-                double tmp = t0; t0 = t1; t1 = tmp;
-                sign0 = -sign0;
+            if (Math.abs(d) < NumericTolerance.GEOMETRY_EPS) {
+                if (o < min || o > max) return SlabResult.miss();
+                continue;
             }
 
-            if (t0 > tMin) { tMin = t0; hitAxis = axis; hitSign = sign0; }
-            if (t1 < tMax) { tMax = t1; }
-            if (tMax < tMin) return SlabResult.miss();
+            double t0 = (min - o) / d;
+            double t1 = (max - o) / d;
+            int nearSign = -1;
+            int farSign = 1;
+
+            if (t0 > t1) {
+                double tmp = t0; t0 = t1; t1 = tmp;
+                nearSign = 1;
+                farSign = -1;
+            }
+
+            if (t0 > tEnter) { tEnter = t0; enterAxis = axis; enterSign = nearSign; }
+            if (t1 < tExit)  { tExit = t1;  exitAxis = axis;  exitSign = farSign; }
+
+            if (tExit < tEnter) return SlabResult.miss();
         }
-        return SlabResult.hit(tMin, hitAxis, hitSign);
+
+        return SlabResult.hit(tEnter, tExit, enterAxis, enterSign, exitAxis, exitSign);
     }
 
     /** Returns x/y/z component by axis index: 0=x, 1=y, 2=z. */
@@ -77,8 +94,20 @@ public final class CollisionTests {
     /**
      * Internal result of the slab algorithm.
      */
-    private static record SlabResult(boolean hit, double tMin, int axis, int sign) {
-        static SlabResult hit(double tMin, int axis, int sign) { return new SlabResult(true, tMin, axis, sign); }
-        static SlabResult miss() { return new SlabResult(false, Double.POSITIVE_INFINITY, -1, 0); }
+    private static record SlabResult(
+            boolean hit,
+            double tEnter,
+            double tExit,
+            int enterAxis,
+            int enterSign,
+            int exitAxis,
+            int exitSign
+    ) {
+        static SlabResult hit(double tEnter, double tExit, int enterAxis, int enterSign, int exitAxis, int exitSign) {
+            return new SlabResult(true, tEnter, tExit, enterAxis, enterSign, exitAxis, exitSign);
+        }
+        static SlabResult miss() {
+            return new SlabResult(false, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, -1, 0, -1, 0);
+        }
     }
 }

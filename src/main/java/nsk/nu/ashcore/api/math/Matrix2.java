@@ -4,8 +4,6 @@ package nsk.nu.ashcore.api.math;
 public record Matrix2(double m00, double m01,
                       double m10, double m11) {
 
-    private static final double EPS = 1e-12;
-
     /** I2. */
     public static Matrix2 identity() {
         return new Matrix2(1,0, 0,1);
@@ -55,7 +53,7 @@ public record Matrix2(double m00, double m01,
 
     public Matrix2 inverse() {
         double det = determinant();
-        if (Math.abs(det) < EPS) throw new ArithmeticException("Singular matrix");
+        if (Math.abs(det) < NumericTolerance.EPS) throw new ArithmeticException("Singular matrix");
         double inv = 1.0 / det;
         return new Matrix2(
                 +m11*inv, -m01*inv,

@@ -18,9 +18,18 @@ public final class ServiceRegistry<T extends Identified> {
     private final Map<String, T> byId = new ConcurrentHashMap<>();
 
     private ServiceRegistry(Class<T> type) {
-        ServiceLoader.load(type).forEach(impl -> byId.put(impl.id(), impl));
+        ServiceLoader.load(type).forEach(impl -> {
+            String id = impl.id();
+            if (id == null || id.isBlank()) throw new IllegalStateException("Service id must be non-empty: " + impl.getClass().getName());
+            T prev = byId.putIfAbsent(id, impl);
+            if (prev != null) {
+                throw new IllegalStateException(
+                        "Duplicate service id '" + id + "': " +
+                                prev.getClass().getName() + " and " + impl.getClass().getName()
+                );
+            }
+        });
     }
-
     /**
      * Creates a new registry and eagerly loads providers via ServiceLoader.
      */

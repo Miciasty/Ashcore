@@ -99,6 +99,7 @@ Requires **Java 21+**.
 ## Quick start
 
 ```java
+import nsk.nu.ashcore.implementation.random.SplitMix64Random;
 import nsk.nu.ashcore.api.random.DeterministicRandom;
 import nsk.nu.ashcore.api.noise.PerlinNoise;
 import nsk.nu.ashcore.api.noise.FractalNoise;
@@ -112,7 +113,7 @@ import nsk.nu.ashcore.api.random.LowDiscrepancy;
 import nsk.nu.ashcore.api.stats.ExponentialMovingAverage;
 
 // RNG + noise
-DeterministicRandom rng = new DeterministicRandom(1337L);
+DeterministicRandom rng = new SplitMix64Random(1337L);
 PerlinNoise perlin = new PerlinNoise(rng);
 double h = FractalNoise.fbm(perlin, x * 0.02, z * 0.02, 5, 2.0, 0.5);
 

@@ -21,9 +21,11 @@ public final class GeometryUtils {
     /** Closest point on segment AB to point P, returns the point. */
     public static Vector3 closestPointOnSegment(Vector3 a, Vector3 b, Vector3 p) {
         Vector3 ab = b.sub(a);
-        double t = (p.sub(a)).dot(ab) / ab.dot(ab);
-        if (t <= 0) return a;
-        if (t >= 1) return b;
+        double ab2 = ab.dot(ab);
+        if (ab2 == 0.0) return a;
+        double t = (p.sub(a)).dot(ab) / ab2;
+        if (t <= 0.0) return a;
+        if (t >= 1.0) return b;
         return a.add(ab.mul(t));
     }
 }

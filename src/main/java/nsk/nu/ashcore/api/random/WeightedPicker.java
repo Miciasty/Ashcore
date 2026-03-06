@@ -14,13 +14,20 @@ public final class WeightedPicker {
      * @return selected index in [0, weights.length)
      */
     public static int pickIndex(double[] weights, DeterministicRandom rng) {
-        double sum = 0;
-        for (double w : weights) sum += w;
-        if (sum <= 0) throw new IllegalArgumentException("All weights are zero.");
+        if (weights == null || weights.length == 0) throw new IllegalArgumentException("weights empty");
+        if (rng == null) throw new NullPointerException("rng");
+
+        double sum = 0.0;
+        for (double w : weights) {
+            if (Double.isNaN(w) || w < 0.0) throw new IllegalArgumentException("weights must be >= 0 and finite");
+            sum += w;
+        }
+        if (sum <= 0.0) throw new IllegalArgumentException("All weights are zero.");
+
         double r = rng.nextUnitDouble() * sum;
         for (int i = 0; i < weights.length; i++) {
             r -= weights[i];
-            if (r <= 0) return i;
+            if (r <= 0.0) return i;
         }
         return weights.length - 1;
     }

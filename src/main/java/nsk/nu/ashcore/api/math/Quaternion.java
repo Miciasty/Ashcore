@@ -47,7 +47,7 @@ public record Quaternion(double w, double x, double y, double z) {
         double bw = b.w*sign, bx = b.x*sign, by = b.y*sign, bz = b.z*sign;
 
         double omega = Math.acos(Math.max(-1, Math.min(1, a.w*bw + a.x*bx + a.y*by + a.z*bz)));
-        if (omega < 1e-6) { // almost identical
+        if (omega < NumericTolerance.INTERPOLATION_EPS) {
             return new Quaternion(
                     a.w + (bw - a.w)*t,
                     a.x + (bx - a.x)*t,

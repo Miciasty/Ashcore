@@ -67,7 +67,7 @@ public record Matrix3(
 
     public Matrix3 inverse() {
         double det = determinant();
-        if (Math.abs(det) < 1e-12) throw new ArithmeticException("Singular matrix");
+        if (Math.abs(det) < NumericTolerance.EPS) throw new ArithmeticException("Singular matrix");
         double inv = 1.0 / det;
 
         double i00 =  (m11*m22 - m12*m21) * inv;

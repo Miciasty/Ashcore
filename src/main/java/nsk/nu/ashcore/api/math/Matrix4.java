@@ -6,8 +6,6 @@ public record Matrix4(double m00, double m01, double m02, double m03,
                       double m20, double m21, double m22, double m23,
                       double m30, double m31, double m32, double m33) {
 
-    private static final double EPS = 1e-12;
-
     /** I4. */
     public static Matrix4 identity() {
         return new Matrix4(
@@ -132,7 +130,7 @@ public record Matrix4(double m00, double m01, double m02, double m03,
         double c0 = m20*m31 - m30*m21;
 
         double det = s0*c5 - s1*c4 + s2*c3 + s3*c2 - s4*c1 + s5*c0;
-        if (Math.abs(det) < EPS) throw new ArithmeticException("Singular matrix");
+        if (Math.abs(det) < NumericTolerance.EPS) throw new ArithmeticException("Singular matrix");
         double invDet = 1.0 / det;
 
         double n00 = (+m11*c5 - m12*c4 + m13*c3) * invDet;
@@ -169,7 +167,7 @@ public record Matrix4(double m00, double m01, double m02, double m03,
      * Verifies the last row ~ [0,0,0,1].
      */
     public Matrix4 inverseAffine() {
-        if (Math.abs(m30) > EPS || Math.abs(m31) > EPS || Math.abs(m32) > EPS || Math.abs(m33 - 1.0) > EPS) {
+        if (Math.abs(m30) > NumericTolerance.EPS || Math.abs(m31) > NumericTolerance.EPS || Math.abs(m32) > NumericTolerance.EPS || Math.abs(m33 - 1.0) > NumericTolerance.EPS) {
             throw new IllegalArgumentException("Not affine [*,*,*,*; *,*,*,*; *,*,*,*; 0,0,0,1]");
         }
 
@@ -180,7 +178,7 @@ public record Matrix4(double m00, double m01, double m02, double m03,
         double detA =  a00*(a11*a22 - a12*a21)
                 - a01*(a10*a22 - a12*a20)
                 + a02*(a10*a21 - a11*a20);
-        if (Math.abs(detA) < EPS) throw new ArithmeticException("Singular affine 3x3");
+        if (Math.abs(detA) < NumericTolerance.EPS) throw new ArithmeticException("Singular affine 3x3");
 
         double invA00 = ( a11*a22 - a12*a21) / detA;
         double invA01 = (-a01*a22 + a02*a21) / detA;

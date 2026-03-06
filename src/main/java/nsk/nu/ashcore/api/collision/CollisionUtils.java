@@ -3,6 +3,7 @@ package nsk.nu.ashcore.api.collision;
 import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
 import nsk.nu.ashcore.api.geometry.Plane;
 import nsk.nu.ashcore.api.geometry.Ray;
+import nsk.nu.ashcore.api.math.NumericTolerance;
 import nsk.nu.ashcore.api.math.Vector3;
 
 /** Small collision helpers on primitives (no meshes, no grids). */
@@ -32,7 +33,7 @@ public final class CollisionUtils {
     /** Ray vs Plane: returns t, or +INF if parallel or behind. */
     public static double rayVsPlaneT(Ray ray, Plane plane){
         double denom = plane.normal().dot(ray.direction());
-        if (Math.abs(denom) < 1e-12) return Double.POSITIVE_INFINITY;
+        if (Math.abs(denom) < NumericTolerance.GEOMETRY_EPS) return Double.POSITIVE_INFINITY;
         double t = -(plane.normal().dot(ray.origin()) + plane.d()) / denom;
         return t >= 0 ? t : Double.POSITIVE_INFINITY;
     }
