@@ -50,7 +50,7 @@ public final class CollisionTests {
      * No arrays are allocated; components are accessed by axis index.
      */
     private static SlabResult rayBoxSlab(Ray ray, AxisAlignedBox box) {
-        double tEnter = 0.0;
+        double tEnter = Double.NEGATIVE_INFINITY;
         double tExit = Double.POSITIVE_INFINITY;
         int enterAxis = -1, enterSign = 0;
         int exitAxis = -1, exitSign = 0;
