@@ -43,14 +43,14 @@ Maven:
 <dependency>
   <groupId>nsk.nu</groupId>
   <artifactId>ashcore</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
 Gradle (Kotlin DSL):
 
 ```kts
-implementation("nsk.nu:ashcore:1.0.0")
+implementation("nsk.nu:ashcore:1.0.1")
 ```
 
 Requires **Java 21+**.
