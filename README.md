@@ -41,7 +41,7 @@ Maven:
 
 ```xml
 <dependency>
-  <groupId>nsk.nu</groupId>
+  <groupId>dev.nasaka.blackframe</groupId>
   <artifactId>ashcore</artifactId>
   <version>1.0.1</version>
 </dependency>
@@ -50,7 +50,7 @@ Maven:
 Gradle (Kotlin DSL):
 
 ```kts
-implementation("nsk.nu:ashcore:1.0.1")
+implementation("dev.nasaka.blackframe:ashcore:1.0.1")
 ```
 
 Requires **Java 21+**.
