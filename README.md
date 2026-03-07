@@ -37,6 +37,9 @@ The scope is intentionally low-level and engine-agnostic.
 
 ## Installation
 
+Published to **Maven Central**.
+No GitHub Packages repository, PAT, or extra credentials are required.
+
 Maven:
 
 ```xml
@@ -50,8 +53,24 @@ Maven:
 Gradle (Kotlin DSL):
 
 ```kts
+repositories {
+    mavenCentral()
+}
+
 implementation("dev.nasaka.blackframe:ashcore:1.0.1")
 ```
+
+Gradle (Groovy DSL):
+
+```groovy
+repositories {
+    mavenCentral()
+}
+
+implementation 'dev.nasaka.blackframe:ashcore:1.0.1'
+```
+
+Note: artifact coordinates are `dev.nasaka.blackframe:ashcore`, while public Java packages remain under `nsk.nu.ashcore.*` for compatibility.
 
 Requires **Java 21+**.
 
