@@ -128,9 +128,11 @@ public final class LowDiscrepancy {
      * @return world-space oriented direction
      */
     public static Vector3 orientYUpToNormal(Vector3 local, Vector3 n) {
-        Vector3 a = Math.abs(n.x()) > 0.5 ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0);
-        Vector3 t = a.cross(n).normalized();
-        Vector3 b = n.cross(t);
-        return getVector3(local, t, n, b);
+        if (n.length() == 0.0) throw new IllegalArgumentException("normal must be non-zero");
+        Vector3 nn = n.normalized();
+        Vector3 a = Math.abs(nn.x()) > 0.5 ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0);
+        Vector3 t = a.cross(nn).normalized();
+        Vector3 b = nn.cross(t);
+        return getVector3(local, t, nn, b);
     }
 }

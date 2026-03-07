@@ -19,10 +19,12 @@ public final class WeightedPicker {
 
         double sum = 0.0;
         for (double w : weights) {
-            if (Double.isNaN(w) || w < 0.0) throw new IllegalArgumentException("weights must be >= 0 and finite");
+            if (!Double.isFinite(w) || w < 0.0) throw new IllegalArgumentException("weights must be >= 0 and finite");
             sum += w;
         }
-        if (sum <= 0.0) throw new IllegalArgumentException("All weights are zero.");
+        if (!Double.isFinite(sum) || sum <= 0.0) {
+            throw new IllegalArgumentException("weights sum must be finite and > 0");
+        }
 
         double r = rng.nextUnitDouble() * sum;
         for (int i = 0; i < weights.length; i++) {
@@ -33,6 +35,8 @@ public final class WeightedPicker {
     }
     /** Picks an element from a list using corresponding weight array. */
     public static <T> T pick(List<T> items, double[] weights, DeterministicRandom rng) {
+        if (items == null) throw new NullPointerException("items");
+        if (weights == null) throw new NullPointerException("weights");
         if (items.size() != weights.length) throw new IllegalArgumentException("Size mismatch.");
         return items.get(pickIndex(weights, rng));
     }

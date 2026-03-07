@@ -42,15 +42,15 @@ Maven:
 ```xml
 <dependency>
   <groupId>nsk.nu</groupId>
-  <artifactId>Ashcore</artifactId>
-  <version>1.0</version>
+  <artifactId>ashcore</artifactId>
+  <version>1.0.0</version>
 </dependency>
 ```
 
 Gradle (Kotlin DSL):
 
 ```kts
-implementation("nsk.nu:Ashcore:1.0")
+implementation("nsk.nu:ashcore:1.0.0")
 ```
 
 Requires **Java 21+**.

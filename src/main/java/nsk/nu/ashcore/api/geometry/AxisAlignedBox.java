@@ -7,6 +7,13 @@ import nsk.nu.ashcore.api.math.Vector3;
  * Suitable for fast broad-phase tests and simple hitboxes.
  */
 public record AxisAlignedBox(Vector3 min, Vector3 max) {
+    public AxisAlignedBox {
+        if (min == null) throw new NullPointerException("min");
+        if (max == null) throw new NullPointerException("max");
+        if (min.x() > max.x() || min.y() > max.y() || min.z() > max.z()) {
+            throw new IllegalArgumentException("min must be <= max on all axes");
+        }
+    }
 
     /**
      * @return true if the point lies inside or on the boundary of this box
