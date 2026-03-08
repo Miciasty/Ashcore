@@ -96,7 +96,8 @@ Maven:
 </dependency>
 ```
 
-Note: Maven coordinates use `dev.nasaka.blackframe:ashcore`, while Java package names remain `nsk.nu.ashcore.*` for compatibility.
+> [!NOTE]
+> Maven coordinates use `dev.nasaka.blackframe:ashcore`, while Java package names remain `nsk.nu.ashcore.*` for compatibility.
 
 Minimal usage example:
 
