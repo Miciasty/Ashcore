@@ -107,10 +107,21 @@ public record Vector4(double x, double y, double z, double w) {
     /**
      * Euclidean length.
      *
-     * @return sqrt(lengthSq())
+     * @return Euclidean length; infinity if the magnitude exceeds the double range
      */
     public double length() {
-        return Math.sqrt(lengthSq());
+        return Math.hypot(Math.hypot(x, y), Math.hypot(z, w));
+    }
+
+    /** @return Euclidean distance in the components' common units; infinity if not representable */
+    public double distance(Vector4 other) {
+        return Math.hypot(Math.hypot(x - other.x, y - other.y), Math.hypot(z - other.z, w - other.w));
+    }
+
+    /** @return squared Euclidean distance; intermediate differences and squares follow double rules */
+    public double distanceSq(Vector4 other) {
+        double dx = x - other.x, dy = y - other.y, dz = z - other.z, dw = w - other.w;
+        return dx*dx + dy*dy + dz*dz + dw*dw;
     }
 
     /**
@@ -119,10 +130,15 @@ public record Vector4(double x, double y, double z, double w) {
      * <p>If this vector is zero-length, returns {@code this} unchanged.</p>
      *
      * @return normalized vector or this if length is zero
+     * @throws IllegalArgumentException if any component is not finite
      */
     public Vector4 normalized() {
-        double len = length();
-        return len == 0.0 ? this : div(len);
+        double scale = Math.max(Math.max(Math.abs(x), Math.abs(y)), Math.max(Math.abs(z), Math.abs(w)));
+        if (!Double.isFinite(scale)) throw new IllegalArgumentException("Vector must be finite");
+        if (scale == 0) return this;
+        double sx = x / scale, sy = y / scale, sz = z / scale, sw = w / scale;
+        double len = Math.sqrt(sx*sx + sy*sy + sz*sz + sw*sw);
+        return new Vector4(sx / len, sy / len, sz / len, sw / len);
     }
 
     /**

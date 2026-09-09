@@ -69,7 +69,7 @@ class GeometryApiTest {
         Capsule degenerate = new Capsule(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 1.0);
 
         assertEquals(0.0, c.distanceSqTo(new Vector3(0.5, 1.0, 0.0)), 1e-12);
-        assertEquals(1.25, degenerate.distanceSqTo(new Vector3(1.5, 0, 0)), 1e-12);
+        assertEquals(0.25, degenerate.distanceSqTo(new Vector3(1.5, 0, 0)), 1e-12);
     }
 
     @Test

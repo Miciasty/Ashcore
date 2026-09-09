@@ -95,10 +95,10 @@ public record Vector2(double x, double y) {
     /**
      * Euclidean length.
      *
-     * @return sqrt(lengthSq())
+     * @return Euclidean length; infinity if the magnitude exceeds the double range
      */
     public double length() {
-        return Math.sqrt(lengthSq());
+        return Math.hypot(x, y);
     }
 
     /**
@@ -108,7 +108,7 @@ public record Vector2(double x, double y) {
      * @return |this - other|
      */
     public double distance(Vector2 other) {
-        return Math.sqrt(distanceSq(other));
+        return Math.hypot(x - other.x, y - other.y);
     }
 
     /**
@@ -129,10 +129,15 @@ public record Vector2(double x, double y) {
      * <p>If this vector is zero-length, returns {@code this} unchanged.</p>
      *
      * @return normalized vector or this if length is zero
+     * @throws IllegalArgumentException if any component is not finite
      */
     public Vector2 normalized() {
-        double len = length();
-        return len == 0.0 ? this : new Vector2(x / len, y / len);
+        double scale = Math.max(Math.abs(x), Math.abs(y));
+        if (!Double.isFinite(scale)) throw new IllegalArgumentException("Vector must be finite");
+        if (scale == 0) return this;
+        double sx = x / scale, sy = y / scale;
+        double len = Math.sqrt(sx*sx + sy*sy);
+        return new Vector2(sx / len, sy / len);
     }
 
     /**

@@ -11,6 +11,9 @@ public final class WeightedPicker {
     private WeightedPicker() {}
     /**
      * Picks an index from the weights array; all weights must be >= 0 and not all zero.
+     * Weights and their sum must be finite. Uses one uniform-double draw and O(n) time/O(1) memory.
+     * Selection intervals are left-closed/right-open; zero-weight entries are never selected.
+     * Ratios use double precision and the RNG's finite resolution. Inputs must remain stable during the call.
      * @return selected index in [0, weights.length)
      */
     public static int pickIndex(double[] weights, DeterministicRandom rng) {
@@ -27,11 +30,14 @@ public final class WeightedPicker {
         }
 
         double r = rng.nextUnitDouble() * sum;
+        int lastPositive = -1;
         for (int i = 0; i < weights.length; i++) {
+            if (weights[i] == 0.0) continue;
+            lastPositive = i;
+            if (r < weights[i]) return i;
             r -= weights[i];
-            if (r <= 0.0) return i;
         }
-        return weights.length - 1;
+        return lastPositive; // rounding at the upper endpoint must not select a trailing zero
     }
     /** Picks an element from a list using corresponding weight array. */
     public static <T> T pick(List<T> items, double[] weights, DeterministicRandom rng) {

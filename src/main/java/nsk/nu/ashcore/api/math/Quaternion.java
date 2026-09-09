@@ -2,6 +2,9 @@ package nsk.nu.ashcore.api.math;
 
 /** Immutable quaternion. Rotation operations require unit quaternions and use radians. */
 public record Quaternion(double w, double x, double y, double z) {
+    // Dimensionless acceptance tolerance for rotation matrix columns and determinant.
+    private static final double MATRIX_EPS = 1e-9;
+
     public static Quaternion identity() { return new Quaternion(1,0,0,0); }
 
     /**
@@ -27,6 +30,110 @@ public record Quaternion(double w, double x, double y, double z) {
         double sw = w / scale, sx = x / scale, sy = y / scale, sz = z / scale;
         double n = Math.sqrt(sw*sw + sx*sx + sy*sy + sz*sz);
         return new Quaternion(sw/n, sx/n, sy/n, sz/n);
+    }
+
+    /** Returns (w,-x,-y,-z). For a unit quaternion this is the inverse rotation. */
+    public Quaternion conjugate(){ return new Quaternion(w, -x, -y, -z); }
+
+    /**
+     * Algebraic inverse, conjugate divided by squared norm; does not normalize away the magnitude.
+     * Non-finite components throw IllegalArgumentException. Zero or an unrepresentable inverse throws
+     * ArithmeticException; unlike normalized(), inverse() has no identity fallback for zero.
+     */
+    public Quaternion inverse(){
+        double scale = Math.max(Math.max(Math.abs(w), Math.abs(x)), Math.max(Math.abs(y), Math.abs(z)));
+        if (!Double.isFinite(scale)) throw new IllegalArgumentException("Quaternion must be finite");
+        if (scale == 0) throw new ArithmeticException("Zero quaternion has no inverse");
+        double sw = w / scale, sx = x / scale, sy = y / scale, sz = z / scale;
+        double n = sw*sw + sx*sx + sy*sy + sz*sz;
+        double iw = (sw / n) / scale, ix = (-sx / n) / scale, iy = (-sy / n) / scale, iz = (-sz / n) / scale;
+        if (!Double.isFinite(iw) || !Double.isFinite(ix) || !Double.isFinite(iy) || !Double.isFinite(iz)) {
+            throw new ArithmeticException("Quaternion inverse overflow");
+        }
+        return new Quaternion(iw, ix, iy, iz);
+    }
+
+    /**
+     * Returns a row-major rotation matrix acting on column vectors, after normalized().
+     * Finite non-unit values are normalized; zero gives identity, and non-finite values are rejected.
+     * All quaternion/matrix conversion operations take O(1) time and additional memory.
+     */
+    public Matrix3 toMatrix3(){
+        Quaternion q = normalized();
+        double xx = q.x*q.x, yy = q.y*q.y, zz = q.z*q.z;
+        double xy = q.x*q.y, xz = q.x*q.z, yz = q.y*q.z;
+        double wx = q.w*q.x, wy = q.w*q.y, wz = q.w*q.z;
+        return new Matrix3(
+                1 - 2*(yy + zz), 2*(xy - wz), 2*(xz + wy),
+                2*(xy + wz), 1 - 2*(xx + zz), 2*(yz - wx),
+                2*(xz - wy), 2*(yz + wx), 1 - 2*(xx + yy)
+        );
+    }
+
+    /** Returns toMatrix3() embedded in an affine 4x4 matrix with zero translation and last row [0,0,0,1]. */
+    public Matrix4 toMatrix4(){
+        Matrix3 m = toMatrix3();
+        return new Matrix4(
+                m.m00(), m.m01(), m.m02(), 0,
+                m.m10(), m.m11(), m.m12(), 0,
+                m.m20(), m.m21(), m.m22(), 0,
+                0, 0, 0, 1
+        );
+    }
+
+    /**
+     * Converts a proper rotation matrix acting on column vectors to a unit quaternion.
+     * Requires finite columns with squared lengths within 1e-9 of one, pairwise dot products within
+     * 1e-9 of zero, and determinant within 1e-9 of +1 (all absolute, dimensionless checks).
+     * Rejects scale, shear and reflection outside those limits with IllegalArgumentException.
+     * Accepted rounding deviations are normalized; this is not a nearest-rotation projection.
+     * Quaternion sign is not preserved by a matrix round trip; q and -q represent the same rotation.
+     */
+    public static Quaternion fromMatrix3(Matrix3 m){
+        Vector3 cx = new Vector3(m.m00(), m.m10(), m.m20());
+        Vector3 cy = new Vector3(m.m01(), m.m11(), m.m21());
+        Vector3 cz = new Vector3(m.m02(), m.m12(), m.m22());
+        if (!(Math.abs(cx.lengthSq() - 1) <= MATRIX_EPS && Math.abs(cy.lengthSq() - 1) <= MATRIX_EPS &&
+                Math.abs(cz.lengthSq() - 1) <= MATRIX_EPS && Math.abs(cx.dot(cy)) <= MATRIX_EPS &&
+                Math.abs(cx.dot(cz)) <= MATRIX_EPS && Math.abs(cy.dot(cz)) <= MATRIX_EPS &&
+                Math.abs(m.determinant() - 1) <= MATRIX_EPS)) {
+            throw new IllegalArgumentException("Matrix must be a finite proper rotation");
+        }
+
+        double trace = m.m00() + m.m11() + m.m22();
+        Quaternion q;
+        if (trace > 0) {
+            double s = 2 * Math.sqrt(1 + trace);
+            q = new Quaternion(s * 0.25, (m.m21() - m.m12()) / s, (m.m02() - m.m20()) / s, (m.m10() - m.m01()) / s);
+        } else if (m.m00() >= m.m11() && m.m00() >= m.m22()) {
+            double s = 2 * Math.sqrt(1 + m.m00() - m.m11() - m.m22());
+            q = new Quaternion((m.m21() - m.m12()) / s, s * 0.25, (m.m01() + m.m10()) / s, (m.m02() + m.m20()) / s);
+        } else if (m.m11() >= m.m22()) {
+            double s = 2 * Math.sqrt(1 + m.m11() - m.m00() - m.m22());
+            q = new Quaternion((m.m02() - m.m20()) / s, (m.m01() + m.m10()) / s, s * 0.25, (m.m12() + m.m21()) / s);
+        } else {
+            double s = 2 * Math.sqrt(1 + m.m22() - m.m00() - m.m11());
+            q = new Quaternion((m.m10() - m.m01()) / s, (m.m02() + m.m20()) / s, (m.m12() + m.m21()) / s, s * 0.25);
+        }
+        return q.normalized();
+    }
+
+    /**
+     * Extracts the rotation of a finite affine rigid matrix using fromMatrix3() on the upper-left block.
+     * Finite translation is ignored; last-row deviations from [0,0,0,1] up to 1e-9 are accepted and discarded.
+     * Scale, shear, reflection, non-finite values and a non-affine last row throw IllegalArgumentException.
+     */
+    public static Quaternion fromMatrix4(Matrix4 m){
+        if (!(Double.isFinite(m.m03()) && Double.isFinite(m.m13()) && Double.isFinite(m.m23()) &&
+                Math.abs(m.m30()) <= MATRIX_EPS && Math.abs(m.m31()) <= MATRIX_EPS &&
+                Math.abs(m.m32()) <= MATRIX_EPS && Math.abs(m.m33() - 1) <= MATRIX_EPS)) {
+            throw new IllegalArgumentException("Matrix must be finite and affine");
+        }
+        return fromMatrix3(new Matrix3(
+                m.m00(), m.m01(), m.m02(),
+                m.m10(), m.m11(), m.m12(),
+                m.m20(), m.m21(), m.m22()
+        ));
     }
 
     /** Hamilton product; for unit rotations, this.mul(b) applies b first, then this. */

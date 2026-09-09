@@ -9,7 +9,7 @@ To lista prac i miejsce zapisu dowodów, a nie dokumentacja gotowych funkcji ani
 ## Punkt odniesienia
 
 - Rola projektu: Podstawowe obliczenia, geometria, losowanie i statystyki. Decyzje tutaj wpływają na wszystkie wyższe biblioteki.
-- Wersja zadeklarowana w lokalnym POM: **1.0.1**. To nie jest potwierdzenie publikacji.
+- Wersja zadeklarowana w lokalnym POM podczas przygotowania planu: **1.0.1**. To nie jest potwierdzenie publikacji; aktualna wersja robocza jest w stanie przekazania poniżej.
 - Stan źródeł podczas przygotowania: **4893f1d** na gałęzi docs/blackframe-contract-v2-20260909; commit zapisuje stan sprzed zmian dokumentacji.
 - Zależności: Brak produkcyjnych zależności od innych bibliotek. JUnit 5.10.2 występuje tylko w testach.
 - Dokument nadrzędny: rewizja **2.0 z 2026-09-09**. Numery sekcji w zadaniach odnoszą się do tej rewizji.
@@ -46,6 +46,9 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 | [CORE-005](#core-005) | P2 | AUDYT | Zweryfikować deklaracje algorytmów i kosztów |
 | [CORE-006](#core-006) | P1 | DECYZJA | Wyznaczyć wspierane API i zasady migracji |
 | [CORE-007](#core-007) | P1 | INSPEKCJA | Dostosować CI, pakowanie i dowody wydania |
+| [CORE-008](#core-008) | P1 | INSPEKCJA / DECYZJA | Uzupełnić przecięcia prymitywów i poprawić kapsułę |
+| [CORE-009](#core-009) | P1 | INSPEKCJA / DECYZJA | Ujednolicić wektory i uzupełnić operacje kwaternionów |
+| [CORE-010](#core-010) | P1 | INSPEKCJA / DECYZJA | Dodać losowanie całkowite w zakresie i poprawić zerowe wagi |
 
 <a id="core-001"></a>
 
@@ -244,11 +247,80 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Powiązania:** Wspólny wzorzec: [TEMPLATE-001](../Ashtemplate/ISSUES.md#template-001) i [TEMPLATE-002](../Ashtemplate/ISSUES.md#template-002). Tę korektę można wykonać niezależnie od napraw algorytmów. Istniejącego numeru wydania nie nadpisuj innym artefaktem.
 
+<a id="core-008"></a>
+
+## CORE-008 — Przecięcia prymitywów i poprawność kapsuły
+
+**Status:** GOTOWE
+
+**Priorytet:** P1. **Dowód:** odtworzone błędy kapsuły w JAR 1.0.2-SNAPSHOT; nowe API zatwierdzone przez użytkownika.
+**Kontrakt:** 3.1, 4.2–4.5, 5, 7. **Baseline:** 7ffe561; snapshot tej sesji 2f5fbe5.
+
+**Gdzie:** CollisionTests, Sphere, Capsule, GeometryApiTest i nowe testy przecięć.
+Kapsuła zwracała 1.25 zamiast kwadratu odległości 0.25 i pomijała trafienie promieniem wzdłuż osi.
+Brakowało bezpośrednich testów promień–sfera, sfera–sfera, sfera–AABB i odcinek–AABB.
+Dodajemy te operacje w Ashcore, bez zależności od wyższych warstw i bez fizycznej reakcji na kontakt.
+Granice są domknięte, promień zwraca odległość, odcinek parametr w [0,1], start wewnątrz daje zero.
+
+- [x] Testy trafień, styczności, braku trafienia, zerowych promieni sfer/odcinków, wnętrza i danych niepoprawnych.
+- [x] Poprawna odległość kapsuły i zakończenia półkuliste, także dla promieni osiowych i zdegenerowanej kapsuły.
+- [x] Dokumentacja zakresów liczbowych, zgodności i kosztów; testy konsumentów ze wskazanym nowym artefaktem.
+
+**Wynik 2026-09-09:** Dodano cztery metody w CollisionTests. Sphere/Capsule odrzucają niefinityczne pozycje i ujemny/niefinityczny promień; zero pozostaje poprawne. Kapsuła liczy rzeczywisty kwadrat odległości od bryły, uwzględnia zakończenia dla promieni osiowych i nie zwraca trafienia za promieniem. PrimitiveIntersectionTest i CapsuleQueriesTest: 13 testów PASS, w tym skale, odwrócenie końców oraz obrót/przesunięcie sceny. README/Javadoc opisują domknięte granice, jednostki, zakresy liczbowe i O(1). Czterej konsumenci przeszli 156 testów z dokładnym JAR 1.1.0-SNAPSHOT; wersje i SHA-256 w [docs/RELEASE.md](docs/RELEASE.md).
+
+**Powiązania:** SPACE-002, TRACE-002; nowe metody dostępne do późniejszej migracji konsumentów, bez edycji ich źródeł w tej sesji.
+
+<a id="core-009"></a>
+
+## CORE-009 — Spójność wektorów i operacje kwaternionów
+
+**Status:** GOTOWE
+
+**Priorytet:** P1. **Dowód:** Vector2/Vector4 z 1e308 normalizują się do zera; braki API potwierdzone inspekcją.
+**Kontrakt:** 3.1, 4.2–4.5, 5, 7. **Baseline:** 7ffe561; snapshot 2f5fbe5.
+
+**Gdzie:** Vector2/3/4, Quaternion, testy matematyki.
+Dodajemy brakujące operacje odległości/interpolacji i operacje składowych Vector3, odporną normalizację Vector2/4,
+sprzężenie i odwrotność kwaternionu oraz konwersje Matrix3/Matrix4 ↔ Quaternion.
+Konwersje dotyczą obrotów; macierze ze skalą, ścinaniem lub odbiciem będą odrzucane. Zero normalized zachowuje obecną semantykę.
+
+- [x] Zgodne zachowanie wektorów dla zera, skrajnych skończonych i niefinitych składowych.
+- [x] Testy znanych obrotów, kompozycji, odwrotności i round-trip macierz–kwaternion, w tym 180°.
+- [x] Jawne zasady odrzucania macierzy, tolerancje i zgodność źródłowa/binarnych sygnatur; minor 1.1.0-SNAPSHOT.
+
+**Wynik 2026-09-09:** Vector3 otrzymał 10 metod, Vector4 dwie metody odległości, Quaternion sześć metod sprzężenia/odwrotności/konwersji. Normalizacja Vector2/4 używa skalowania; zero zachowano. Konwersje macierzy sprawdzają obrót właściwy z bezwymiarową tolerancją absolutną 1e-9; Matrix4 wymaga części afinicznej i pomija skończoną translację. Odwrotność kwaternionu zerowego rzuca wyjątek, normalizacja zera nadal daje identity. Trzy nowe klasy testów matematyki: 9 testów PASS. Porównanie javap obu JAR: łącznie dla rozszerzenia 26 dodanych metod publicznych, zero usuniętych sygnatur, identyczny zbiór 61 plików klas. Wersja 1.1.0-SNAPSHOT, skompilowany przykład README oraz buildy konsumentów PASS.
+
+**Powiązania:** SPACE-002; konwersje i odwrotność są operacjami matematycznymi Ashcore, bez grafów ramek.
+
+<a id="core-010"></a>
+
+## CORE-010 — Losowanie całkowite w zakresie i zerowe wagi
+
+**Status:** GOTOWE
+
+**Priorytet:** P1. **Dowód:** WeightedPicker wybiera indeks 0 dla wag [0,1] przy losowaniu 0; brak metod zakresowych w interfejsie.
+**Kontrakt:** 3.1, 4.1, 4.2, 4.4, 4.5, 5. **Baseline:** 7ffe561; snapshot 2f5fbe5.
+
+**Gdzie:** DeterministicRandom, WeightedPicker i testy RNG.
+Dodajemy domyślne nextInt(bound), nextInt(origin,bound), nextLong(bound), nextLong(origin,bound).
+Przedziały są lewostronnie domknięte; redukcja przez odrzucanie eliminuje obciążenie modulo przy równomiernych bitach źródłowych.
+Stan może zużyć więcej niż jedno losowanie. Dotychczasowe bezargumentowe strumienie pozostają bez zmian.
+
+- [x] Testy odrzucania, zakresów o przepełniającej się szerokości i skrajnych granic signed, potęg dwójki, zakresów jednostkowych i niepoprawnych granic.
+- [x] Powtarzalność, określone zużycie stanu i utrwalone wyniki; dokumentacja oczekiwanego kosztu i warunków zakończenia.
+- [x] WeightedPicker nigdy nie wybiera zerowej wagi, w tym na granicach przedziałów i przy zaokrągleniu.
+
+**Wynik 2026-09-09:** Cztery metody default stosują redukcję z odrzucaniem. Niepoprawny zakres nie zużywa stanu; poprawny zużywa co najmniej jedno losowanie, nawet gdy zawiera jedną liczbę. Oczekiwany koszt O(1), pamięć O(1); nie ma skończonego limitu prób dla patologicznego generatora. Nowe wyniki utrwalono od 1.1 na resztę 1.x, bez zmiany strumieni bezargumentowych. BoundedRandomTest porównuje wyniki z JDK RandomGenerator przy identycznych bitach i zawiera stałe wektory oraz testy zużycia stanu. WeightedPicker pomija zerowe wagi, używa granicy wyłącznej i ostatniej dodatniej wagi jako zabezpieczenia zaokrąglenia. Obie nowe klasy RNG: 9 testów PASS. Własne implementacje starego interfejsu nadal się kompilują; nie dodano abstrakcyjnych metod.
+
+**Powiązania:** istniejące interfejsy RNG konsumentów muszą kompilować się bez nowych implementacji metod.
+
 ## Stan przekazania i dziennik sesji
 
 **Stan historyczny przed korektą, 2026-09-09:** wszystkie zadania pozostawały OTWARTE. Utworzono dokumentację; nie wprowadzono korekt kodu, nie wykonano buildów bibliotek ani publikacji. Nie uznawaj samego dodania ISSUES.md za realizację żadnego zadania.
 
-**Aktualny stan po korekcie 2026-09-09:** CORE-001–CORE-007 GOTOWE w opisanym zakresie. Gałąź fix/ashcore-contract-v2-20260909, snapshot wejściowy 7649935, wersja robocza 1.0.2-SNAPSHOT. Szczegółowe dowody, migracja i integracja: [docs/RELEASE.md](docs/RELEASE.md). Zamknięcie tych zadań nie oznacza pełnego audytu każdego publicznego API ani potwierdzenia publikacji.
+**Historyczny stan po pierwszej korekcie 2026-09-09:** CORE-001–CORE-007 GOTOWE w opisanym zakresie. Gałąź fix/ashcore-contract-v2-20260909, snapshot wejściowy 7649935, commit korekty 7ffe561, wersja robocza 1.0.2-SNAPSHOT.
+
+**Aktualny stan po rozszerzeniu 2026-09-09:** CORE-008–CORE-010 również GOTOWE. Gałąź feat/ashcore-primitives-math-random-20260909, snapshot 2f5fbe5, wersja robocza 1.1.0-SNAPSHOT. Dodano 26 metod publicznych w istniejących typach i 7 klas testowych; brak nowych klas lub zależności produkcyjnych. clean verify: 144 testy jednostkowe + 3 testy artefaktów PASS, IntelliJ build PASS; 156 testów konsumentów PASS. Szczegółowe dowody, migracja i integracja: [docs/RELEASE.md](docs/RELEASE.md). Zamknięcie tych zadań nie oznacza pełnego audytu każdego publicznego API ani potwierdzenia publikacji.
 
 **Następny krok:** uruchomić zdalne CI na Java 21/25 i przed rzeczywistym wydaniem sprawdzić dostępność nowego numeru oraz konfigurację destynacji. W repozytoriach konsumentów kontynuować GRID-001/GRID-005, SPACE-002/SPACE-003 i TRACE-002/TRACE-003 według ich backlogów; zmiana lokalnego Ashcore nie podmienia opublikowanych zależności.
 
@@ -257,5 +329,5 @@ Po kolejnej sesji dopisz wiersz i uzupełnij statusy odpowiednich zadań. Zapisz
 | Data / commit | ID i decyzja | Zmiana | Polecenie / test i rzeczywisty wynik | Pozostałe zależności / następny krok |
 | --- | --- | --- | --- | --- |
 | 2026-09-09 / punkt odniesienia powyżej | Wszystkie: OTWARTE | Utworzenie planu korekt | Inspekcja statyczna; testów bibliotek nie uruchomiono | Rozpocząć od wskazanego P1 |
-
-| 2026-09-09 / commit zawierający ten wpis; snapshot 7649935 | CORE-001–CORE-007: GOTOWE | Korekty normalizacji, geometrii, P², wag, walidacji, dokumentacji, CI i pakowania; zachowana zgodność AABB po teście Ashgrid | Bazowe 88 testów PASS; pierwsze 13 regresji: 10 FAIL; końcowe clean verify: 113 + 3 PASS. Cztery izolowane buildy konsumentów: 156 testów PASS. IntelliJ build PASS. JDK/Maven, wersje artefaktów, SHA i polecenia: docs/RELEASE.md | Publikacja i zdalne CI niewykonane; nie nadpisano wydanych artefaktów. Przekazać ustalenia dolnej warstwy do backlogów konsumentów |
+| 2026-09-09 / 7ffe561; snapshot 7649935 | CORE-001–CORE-007: GOTOWE | Korekty normalizacji, geometrii, P², wag, walidacji, dokumentacji, CI i pakowania; zachowana zgodność AABB po teście Ashgrid | Bazowe 88 testów PASS; pierwsze 13 regresji: 10 FAIL; końcowe clean verify: 113 + 3 PASS. Cztery izolowane buildy konsumentów: 156 testów PASS. IntelliJ build PASS. JDK/Maven, wersje artefaktów, SHA i polecenia: docs/RELEASE.md | Publikacja i zdalne CI niewykonane; nie nadpisano wydanych artefaktów. Przekazać ustalenia dolnej warstwy do backlogów konsumentów |
+| 2026-09-09 / commit dodający ten wpis; snapshot 2f5fbe5 | CORE-008–CORE-010: GOTOWE | Przecięcia prymitywów, kapsuła, spójność wektorów, konwersje/odwrotność kwaternionu, RNG zakresowe i zerowe wagi; minor 1.1.0-SNAPSHOT | Pierwsze 6 regresji: 6 FAIL; końcowe clean verify: 144 + 3 PASS. IntelliJ build PASS. Cztery izolowane buildy: 156 testów PASS. javap: 26 metod dodanych, zero sygnatur usuniętych. JDK 25.0.2, Maven 3.9.16, release 21; szczegóły i SHA w docs/RELEASE.md | Publikacja i zdalne CI niewykonane; lokalnie nie testowano runtime Java 21. Źródła/POM konsumentów pozostawiono bez zmian |

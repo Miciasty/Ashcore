@@ -2,15 +2,85 @@ package nsk.nu.ashcore.api.collision;
 
 import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
 import nsk.nu.ashcore.api.geometry.Ray;
+import nsk.nu.ashcore.api.geometry.Segment3;
+import nsk.nu.ashcore.api.geometry.Sphere;
 import nsk.nu.ashcore.api.math.Vector3;
 
 /**
- * Intersection tests for a ray and a closed axis-aligned box, including faces, edges and corners.
- * Results describe the box itself; an enclosed object's shape may differ. No collision response is computed.
+ * Intersection tests for closed primitive shapes, including touching boundaries.
+ * Results describe the supplied primitives; an enclosed object's shape may differ. No collision response is computed.
  * O(1) time and additional memory; result records and hit vectors may allocate.
  */
 public final class CollisionTests {
     private CollisionTests() {}
+
+    /**
+     * First ray/sphere contact distance, zero for an origin inside/on the sphere, positive infinity for a miss.
+     * Tangency and a zero-radius sphere count as contact. Uses the ray's normalized direction.
+     * Origin-center differences must be finite; invalid differences throw IllegalArgumentException.
+     * Scaling avoids squared-coordinate overflow, but rounding can lose tiny features at large relative scales.
+     * No tolerance is added; the returned distance must fit in double. O(1) time and additional memory.
+     */
+    public static double rayVsSphereT(Ray ray, Sphere sphere) {
+        Vector3 offset = ray.origin().sub(sphere.center());
+        requireFinite(offset);
+        double scale = Math.max(maxAbs(offset), sphere.radius());
+        if (scale == 0) return 0;
+        Vector3 o = offset.div(scale);
+        double radius = sphere.radius() / scale;
+        if (o.length() <= radius) return 0;
+
+        Vector3 d = ray.direction();
+        double length = d.length();
+        double projection = o.dot(d) / length;
+        if (projection >= 0) return Double.POSITIVE_INFINITY;
+        double perpendicular = o.cross(d).length() / length;
+        if (perpendicular > radius) return Double.POSITIVE_INFINITY;
+        // Separate square roots avoid squaring a very small radius; perpendicular distance avoids b*b-c cancellation.
+        double halfChord = Math.sqrt(radius - perpendicular) * Math.sqrt(radius + perpendicular);
+        return Math.max(0.0, (-projection - halfChord) / length) * scale;
+    }
+
+    /**
+     * Whether two closed spheres overlap/touch, including zero-radius points. All positions/radii share units.
+     * Center differences must be finite or IllegalArgumentException is thrown. Comparisons use scaled doubles
+     * without a contact tolerance; features below relative floating-point precision may be lost. O(1) time/space.
+     */
+    public static boolean sphereVsSphere(Sphere a, Sphere b) {
+        Vector3 offset = a.center().sub(b.center());
+        requireFinite(offset);
+        double scale = Math.max(maxAbs(offset), Math.max(a.radius(), b.radius()));
+        return scale == 0 || offset.div(scale).length() <= a.radius() / scale + b.radius() / scale;
+    }
+
+    /**
+     * Whether a closed sphere overlaps/touches a finite AABB, including degenerate shapes. O(1) time/space.
+     * Uses distance to the closest box point with no added tolerance. Bounds and center/closest-point
+     * differences must be finite or IllegalArgumentException is thrown; relative rounding limits apply.
+     */
+    public static boolean sphereVsBox(Sphere sphere, AxisAlignedBox box) {
+        requireFiniteBox(box);
+        Vector3 offset = sphere.center().sub(CollisionUtils.closestPointOnBox(sphere.center(), box));
+        requireFinite(offset);
+        double scale = Math.max(maxAbs(offset), sphere.radius());
+        return scale == 0 || offset.div(scale).length() <= sphere.radius() / scale;
+    }
+
+    /**
+     * First segment/AABB contact as a fraction t in [0,1], evaluated by segment.at(t); positive infinity on a miss.
+     * Both endpoints and touching boundaries are included. Starting inside/on the box gives zero; a zero-length
+     * segment is a point test. t is dimensionless, not distance. Endpoints, bounds and b-a must be finite or
+     * IllegalArgumentException is thrown. Slab differences/ratios must remain representable. O(1) time/space.
+     */
+    public static double segmentVsBoxT(Segment3 segment, AxisAlignedBox box) {
+        requireFinite(segment.a());
+        requireFinite(segment.b());
+        Vector3 direction = segment.b().sub(segment.a());
+        requireFinite(direction);
+        SlabResult r = boxSlab(segment.a(), direction, box);
+        if (!r.hit || r.tExit < 0.0 || r.tEnter > 1.0) return Double.POSITIVE_INFINITY;
+        return Math.max(0.0, r.tEnter);
+    }
 
     /**
      * Ray vs axis-aligned box using the slab method.
@@ -55,18 +125,19 @@ public final class CollisionTests {
      * No arrays are allocated; components are accessed by axis index.
      */
     private static SlabResult rayBoxSlab(Ray ray, AxisAlignedBox box) {
-        if (!Double.isFinite(box.min().x()) || !Double.isFinite(box.min().y()) || !Double.isFinite(box.min().z()) ||
-                !Double.isFinite(box.max().x()) || !Double.isFinite(box.max().y()) || !Double.isFinite(box.max().z())) {
-            throw new IllegalArgumentException("Bounds must be finite");
-        }
+        return boxSlab(ray.origin(), ray.direction(), box);
+    }
+
+    private static SlabResult boxSlab(Vector3 origin, Vector3 direction, AxisAlignedBox box) {
+        requireFiniteBox(box);
         double tEnter = Double.NEGATIVE_INFINITY;
         double tExit = Double.POSITIVE_INFINITY;
         int enterAxis = -1, enterSign = 0;
         int exitAxis = -1, exitSign = 0;
 
         for (int axis = 0; axis < 3; axis++) {
-            double o = comp(ray.origin(), axis);
-            double d = comp(ray.direction(), axis);
+            double o = comp(origin, axis);
+            double d = comp(direction, axis);
             double min = comp(box.min(), axis);
             double max = comp(box.max(), axis);
 
@@ -94,6 +165,19 @@ public final class CollisionTests {
 
         return SlabResult.hit(tEnter, tExit, enterAxis, enterSign, exitAxis, exitSign);
     }
+
+    private static void requireFiniteBox(AxisAlignedBox box) {
+        requireFinite(box.min());
+        requireFinite(box.max());
+    }
+
+    private static void requireFinite(Vector3 v) {
+        if (!Double.isFinite(v.x()) || !Double.isFinite(v.y()) || !Double.isFinite(v.z())) {
+            throw new IllegalArgumentException("Coordinates and differences must be finite");
+        }
+    }
+
+    private static double maxAbs(Vector3 v) { return Math.max(Math.abs(v.x()), Math.max(Math.abs(v.y()), Math.abs(v.z()))); }
 
     /** Returns x/y/z component by axis index: 0=x, 1=y, 2=z. */
     private static double comp(Vector3 v, int axis) {
