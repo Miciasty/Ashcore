@@ -5,6 +5,8 @@ import java.util.Arrays;
 /**
  * P² (P-squared) online quantile estimator for a single quantile q in (0,1).
  * Keeps 5 markers and updates positions/heights per sample. O(1) time, O(1) memory.
+ * Approximate and order-dependent; no general error bound. Samples must be finite with representable
+ * intermediate differences/products. Not thread-safe. At most Integer.MAX_VALUE samples per reset.
  *
  * References: Jain, Chlamtac (1985) - "The P^2 Algorithm for Dynamic Calculation of Quantiles..."
  */
@@ -31,8 +33,10 @@ public final class P2Quantile {
         pInc[4] = 1.0;
     }
 
-    /** Adds a sample. O(1) time. */
+    /** Adds a finite sample in O(1); rejects non-finite input or an exhausted counter before mutation. */
     public void add(double x) {
+        if (!Double.isFinite(x)) throw new IllegalArgumentException("Sample must be finite");
+        if (n == Integer.MAX_VALUE) throw new IllegalStateException("Sample limit reached; reset required");
         if (!initialized) {
             bootstrap(x);
             return;
@@ -99,7 +103,7 @@ public final class P2Quantile {
 
         double a = (n_i - n_im1 + s) * (h_ip1 - h_i) / (n_ip1 - n_i);
         double b = (n_ip1 - n_i - s) * (h_i - h_im1) / (n_i - n_im1);
-        return h_i + (a + b) / (n_ip1 - n_im1);
+        return h_i + s * (a + b) / (n_ip1 - n_im1);
     }
 
     private double linear(int i, int s) {

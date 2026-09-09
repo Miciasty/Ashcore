@@ -1,22 +1,35 @@
 package nsk.nu.ashcore.api.math;
 
+/** Immutable quaternion. Rotation operations require unit quaternions and use radians. */
 public record Quaternion(double w, double x, double y, double z) {
     public static Quaternion identity() { return new Quaternion(1,0,0,0); }
 
-    /** Unit quaternion from axis (normalized inside) and angle in radians. */
+    /**
+     * Unit quaternion from a finite, non-zero axis (normalized inside) and finite angle in radians.
+     * Positive angles follow the right-hand rule. Invalid inputs throw IllegalArgumentException.
+     */
     public static Quaternion fromAxisAngle(Vector3 axis, double angle){
+        if (!Double.isFinite(angle)) throw new IllegalArgumentException("Angle must be finite");
         double half = angle * 0.5, s = Math.sin(half);
         Vector3 n = axis.normalized();
+        if (n.x() == 0 && n.y() == 0 && n.z() == 0) throw new IllegalArgumentException("Axis must be non-zero");
         return new Quaternion(Math.cos(half), n.x()*s, n.y()*s, n.z()*s);
     }
 
-    /** Normalized quaternion (returns this if already unit). */
+    /**
+     * Unit quaternion within floating-point rounding; the zero quaternion returns identity for compatibility.
+     * Non-finite components throw IllegalArgumentException. Finite extreme components are scaled safely.
+     */
     public Quaternion normalized(){
-        double n = Math.sqrt(w*w + x*x + y*y + z*z);
-        return n == 0 ? identity() : new Quaternion(w/n, x/n, y/n, z/n);
+        double scale = Math.max(Math.max(Math.abs(w), Math.abs(x)), Math.max(Math.abs(y), Math.abs(z)));
+        if (!Double.isFinite(scale)) throw new IllegalArgumentException("Quaternion must be finite");
+        if (scale == 0) return identity();
+        double sw = w / scale, sx = x / scale, sy = y / scale, sz = z / scale;
+        double n = Math.sqrt(sw*sw + sx*sx + sy*sy + sz*sz);
+        return new Quaternion(sw/n, sx/n, sy/n, sz/n);
     }
 
-    /** Hamilton product (composition). */
+    /** Hamilton product; for unit rotations, this.mul(b) applies b first, then this. */
     public Quaternion mul(Quaternion b){
         return new Quaternion(
                 w*b.w - x*b.x - y*b.y - z*b.z,
@@ -40,7 +53,11 @@ public record Quaternion(double w, double x, double y, double z) {
         );
     }
 
-    /** Spherical linear interpolation; returns unit quaternion. */
+    /**
+     * Shortest-arc spherical interpolation of finite unit quaternions for t in [0,1].
+     * Inputs are caller-validated; returns a unit quaternion within rounding error.
+     * Angles below INTERPOLATION_EPS radians use normalized linear interpolation.
+     */
     public static Quaternion slerp(Quaternion a, Quaternion b, double t){
         double dot = a.w*b.w + a.x*b.x + a.y*b.y + a.z*b.z;
         double sign = dot < 0 ? -1 : 1;

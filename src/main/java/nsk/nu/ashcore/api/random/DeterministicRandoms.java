@@ -12,7 +12,7 @@ public final class DeterministicRandoms {
     private DeterministicRandoms() { }
 
     /**
-     * Creates the default deterministic generator for this release.
+     * Creates SplitMix64, the default throughout Ashcore 1.x. Use splitMix64 when persisting algorithm identity.
      *
      * @param seed initial seed
      * @return deterministic random generator
@@ -22,7 +22,8 @@ public final class DeterministicRandoms {
     }
 
     /**
-     * Creates a SplitMix64 generator.
+     * Creates a mutable SplitMix64 generator. Its nextLong stream and default int/double conversions
+     * are stable in 1.x for the same seed and ordered calls; no shared concurrent mutation is supported.
      *
      * @param seed initial seed
      * @return SplitMix64-based deterministic generator

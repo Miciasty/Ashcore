@@ -2,19 +2,22 @@ package nsk.nu.ashcore.api.collision;
 
 import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
 import nsk.nu.ashcore.api.geometry.Ray;
-import nsk.nu.ashcore.api.math.NumericTolerance;
 import nsk.nu.ashcore.api.math.Vector3;
 
 /**
- * Collection of static, allocation-free intersection tests.
- * Centralizes shared "slab" logic to avoid duplication.
+ * Intersection tests for a ray and a closed axis-aligned box, including faces, edges and corners.
+ * Results describe the box itself; an enclosed object's shape may differ. No collision response is computed.
+ * O(1) time and additional memory; result records and hit vectors may allocate.
  */
 public final class CollisionTests {
     private CollisionTests() {}
 
     /**
      * Ray vs axis-aligned box using the slab method.
-     * @return t of the first intersection or {@code Double.POSITIVE_INFINITY} if no hit
+     * Only exactly zero direction components are parallel. Coordinate differences and the hit distance
+     * must be representable as doubles; no scale-independent robustness or error bound is promised.
+     * Non-finite box bounds throw IllegalArgumentException.
+     * @return distance to first contact, zero when starting inside/on the box, or positive infinity on a miss
      */
     public static double rayVsBoxT(Ray ray, AxisAlignedBox box) {
         SlabResult r = rayBoxSlab(ray, box);
@@ -23,7 +26,9 @@ public final class CollisionTests {
     }
 
     /**
-     * Full ray vs box hit information: t, intersection point and face normal.
+     * Full ray vs box hit information: distance, point and outward face normal.
+     * When starting inside, t is zero and point is the origin, but normal is the exit face's normal.
+     * Equal face parameters use X before Y before Z. A miss has infinite t and null point/normal.
      */
     public static Hit rayVsBoxHit(Ray ray, AxisAlignedBox box) {
         SlabResult r = rayBoxSlab(ray, box);
@@ -50,6 +55,10 @@ public final class CollisionTests {
      * No arrays are allocated; components are accessed by axis index.
      */
     private static SlabResult rayBoxSlab(Ray ray, AxisAlignedBox box) {
+        if (!Double.isFinite(box.min().x()) || !Double.isFinite(box.min().y()) || !Double.isFinite(box.min().z()) ||
+                !Double.isFinite(box.max().x()) || !Double.isFinite(box.max().y()) || !Double.isFinite(box.max().z())) {
+            throw new IllegalArgumentException("Bounds must be finite");
+        }
         double tEnter = Double.NEGATIVE_INFINITY;
         double tExit = Double.POSITIVE_INFINITY;
         int enterAxis = -1, enterSign = 0;
@@ -61,7 +70,7 @@ public final class CollisionTests {
             double min = comp(box.min(), axis);
             double max = comp(box.max(), axis);
 
-            if (Math.abs(d) < NumericTolerance.GEOMETRY_EPS) {
+            if (d == 0.0) {
                 if (o < min || o > max) return SlabResult.miss();
                 continue;
             }

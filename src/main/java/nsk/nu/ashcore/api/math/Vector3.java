@@ -23,13 +23,18 @@ public record Vector3(double x, double y, double z) {
                 x * other.y - y * other.x
         );
     }
-    /** @return Euclidean length (magnitude) */
-    public double length() { return Math.sqrt(dot(this)); }
+    /** @return Euclidean length; infinity if the magnitude exceeds the double range */
+    public double length() { return Math.hypot(Math.hypot(x, y), z); }
     /**
-     * @return normalized vector; returns {@code this} if the length is zero (no allocations on zero).
+     * @return unit vector within floating-point rounding; returns {@code this} for the zero vector
+     * @throws IllegalArgumentException if any component is not finite
      */
     public Vector3 normalized() {
-        double len = length();
-        return len == 0 ? this : mul(1.0 / len);
+        double scale = Math.max(Math.abs(x), Math.max(Math.abs(y), Math.abs(z)));
+        if (!Double.isFinite(scale)) throw new IllegalArgumentException("Vector must be finite");
+        if (scale == 0) return this;
+        double sx = x / scale, sy = y / scale, sz = z / scale;
+        double len = Math.sqrt(sx*sx + sy*sy + sz*sz);
+        return new Vector3(sx / len, sy / len, sz / len);
     }
 }

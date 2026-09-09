@@ -21,25 +21,29 @@ public final class WeightedSampler {
         this.n = prob.length;
     }
     /**
-     * Builds a sampler for the given non-negative weights. At least one weight must be > 0.
-     * @param weights non-negative weights
+     * Builds owned tables from finite non-negative weights, with at least one positive weight.
+     * Ratios are computed in double precision; extremely small relative weights may underflow to zero.
+     * Later input-array changes have no effect. Invalid weights throw IllegalArgumentException.
+     * @param weights finite non-negative weights in a common, arbitrary unit
      * @return sampler ready to draw in O(1)
      */
     public static WeightedSampler build(double[] weights) {
         int n = weights.length;
         if (n == 0) throw new IllegalArgumentException("weights empty");
-        double sum = 0;
+        double max = 0;
         for (double w : weights) {
-            if (w < 0) throw new IllegalArgumentException("negative weight");
-            sum += w;
+            if (w < 0 || !Double.isFinite(w)) throw new IllegalArgumentException("weights must be finite and non-negative");
+            max = Math.max(max, w);
         }
-        if (sum <= 0) throw new IllegalArgumentException("all weights are zero");
+        if (max == 0) throw new IllegalArgumentException("all weights are zero");
+        double sum = 0;
+        for (double w : weights) sum += w / max;
 
         double[] p = new double[n];
         Deque<Integer> small = new ArrayDeque<>();
         Deque<Integer> large = new ArrayDeque<>();
         for (int i = 0; i < n; i++) {
-            p[i] = weights[i] * n / sum;
+            p[i] = (weights[i] / max) * n / sum;
             if (p[i] < 1.0) small.add(i); else large.add(i);
         }
 

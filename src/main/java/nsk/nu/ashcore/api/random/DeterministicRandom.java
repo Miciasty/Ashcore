@@ -4,7 +4,9 @@ import nsk.nu.ashcore.api.spi.Identified;
 
 /**
  * Deterministic pseudo-random generator interface.
- * Implementations must be reproducible for the same seed.
+ * Implementations must be reproducible for the same algorithm version, initial state and ordered calls.
+ * The default nextInt/nextUnitDouble each consume one nextLong; mixing calls changes subsequent values.
+ * Mutable implementations require exclusive access or externally ordered synchronization.
  */
 public interface DeterministicRandom extends Identified {
     /** @return next 64-bit pseudo-random value */

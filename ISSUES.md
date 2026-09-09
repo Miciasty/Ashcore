@@ -51,7 +51,8 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## CORE-001 — Domknąć gwarancje normalizacji promieni i obrotów
 
-**Status:** OTWARTE  
+**Status:** GOTOWE
+
 **Priorytet:** P1  
 **Dowód:** INSPEKCJA  
 **Kontrakt:** sekcje 3.1, 4.2, 4.3, 4.5
@@ -66,9 +67,11 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Dla (1e308,0,0), bardzo małego kierunku, zera i danych niefinitych konstruktor zwraca obiekt spełniający kontrakt albo udokumentowany błąd; nigdy zaakceptowany promień z zerowym kierunkiem.
-- [ ] Testy sprawdzają długość i kierunek oraz geometrię Ray.at; obejmują zero/duże składowe Quaternion.
-- [ ] Zapisano skutki zgodności dla Ashgrid, Ashspace i Ashtrace.
+- [x] Dla (1e308,0,0), bardzo małego kierunku, zera i danych niefinitych konstruktor zwraca obiekt spełniający kontrakt albo udokumentowany błąd; nigdy zaakceptowany promień z zerowym kierunkiem.
+- [x] Testy sprawdzają długość i kierunek oraz geometrię Ray.at; obejmują zero/duże składowe Quaternion.
+- [x] Zapisano skutki zgodności dla Ashgrid, Ashspace i Ashtrace.
+
+**Wynik korekty 2026-09-09:** Skalowana normalizacja Vector3, Quaternion i Plane; Ray odrzuca zerowy kierunek oraz niefinity origin/direction. Zero Vector3 pozostaje zerem, zero Quaternion daje identity; zerowa oś obrotu jest jawnie odrzucana. NormalizationTest obejmuje 1e308, Double.MAX_VALUE, 1e-300, Double.MIN_VALUE, kierunki diagonalne, Ray.at, obroty i offset płaszczyzny. Przypadki odtworzono przed poprawką. Testy konsumentów przeszły; zob. docs/RELEASE.md.
 
 **Powiązania:** Przekaż wynik do [GRID-001](../Ashgrid/ISSUES.md#grid-001), [SPACE-002](../Ashspace/ISSUES.md#space-002) i [TRACE-002](../Ashtrace/ISSUES.md#trace-002); nie naprawiaj tego przez duplikowanie normalizacji w każdej bibliotece.
 
@@ -76,7 +79,8 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## CORE-002 — Określić zakres determinizmu RNG, szumu i obliczeń
 
-**Status:** OTWARTE  
+**Status:** GOTOWE
+
 **Priorytet:** P1  
 **Dowód:** AUDYT  
 **Kontrakt:** sekcje 4.1, 5
@@ -91,9 +95,11 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Istnieje jawna, ograniczona do dowodów deklaracja powtarzalności i zasad zmian wyników pomiędzy wydaniami.
-- [ ] Dla obiecanego stabilnego RNG/hash są utrwalone wektory wyników z nazwanym algorytmem; inne obietnice mają adekwatne testy.
-- [ ] README wyjaśnia rolę seeda, stanu i kolejności bez obietnicy dokładności wynikającej z samego determinizmu.
+- [x] Istnieje jawna, ograniczona do dowodów deklaracja powtarzalności i zasad zmian wyników pomiędzy wydaniami.
+- [x] Dla obiecanego stabilnego RNG/hash są utrwalone wektory wyników z nazwanym algorytmem; inne obietnice mają adekwatne testy.
+- [x] README wyjaśnia rolę seeda, stanu i kolejności bez obietnicy dokładności wynikającej z samego determinizmu.
+
+**Wynik korekty 2026-09-09:** README i Javadoc rozdzielają stałe strumienie SplitMix64/FNV/mix64/SeedSequence w 1.x od powtarzalności obliczeń zmiennoprzecinkowych w jednej wersji i środowisku. DeterminismTest utrwala wektory wyników, porównuje SplitMix64 z JDK i sprawdza zużycie 255 losowań podczas konstrukcji Perlin. Dopisano kolejność próbek, callbacki, zakresy szumu, reset RNG oraz brak gwarancji niezależności seedów. Przejrzano Math/StrictMath bez mechanicznej zamiany.
 
 **Powiązania:** Konsumenci muszą znać ewentualne zmiany wyników; szczególnie [SPACE-003](../Ashspace/ISSUES.md#space-003) i [TRACE-003](../Ashtrace/ISSUES.md#trace-003).
 
@@ -101,7 +107,8 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## CORE-003 — Ustalić kolejność i efekty ładowania providerów SPI
 
-**Status:** OTWARTE  
+**Status:** GOTOWE
+
 **Priorytet:** P1  
 **Dowód:** INSPEKCJA  
 **Kontrakt:** sekcje 3.1, 4.1, 4.2, 4.5
@@ -116,9 +123,11 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Javadoc opisuje wybór po ID, brak/duplikat ID, ładowanie i zakres obietnicy kolejności.
-- [ ] Jeśli porządek jest gwarantowany, testy sprawdzają go dla różnych układów providerów; jeśli nie, przykłady nie polegają na pierwszym elemencie.
-- [ ] Sprawdzono działanie z zasobami SPI zbudowanego JAR, nie tylko z katalogu klas testowych.
+- [x] Javadoc opisuje wybór po ID, brak/duplikat ID, ładowanie i zakres obietnicy kolejności.
+- [x] Jeśli porządek jest gwarantowany, testy sprawdzają go dla różnych układów providerów; jeśli nie, przykłady nie polegają na pierwszym elemencie.
+- [x] Sprawdzono działanie z zasobami SPI zbudowanego JAR, nie tylko z katalogu klas testowych.
+
+**Wynik korekty 2026-09-09:** Zachowano nieokreślony porządek ids()/all() i inicjalizacji providerów; wybór odbywa się po ID. Javadoc wyjaśnia classloader, eager loading, mutowalność providerów, duplikaty, brak i propagację błędów. PackagedArtifactIT ładuje rejestr z głównego JAR i providery z osobnego JAR z META-INF/services, sprawdzając wybór, brak i duplikaty. Ashcore nie rejestruje własnych providerów.
 
 **Powiązania:** [GRID-005](../Ashgrid/ISSUES.md#grid-005) korzysta z ServiceRegistry; uzgodnij kontrakt przed dostosowaniem testów Ashgrid.
 
@@ -126,7 +135,8 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## CORE-004 — Opisać jednostki, tolerancje i założenia geometrii
 
-**Status:** OTWARTE  
+**Status:** GOTOWE
+
 **Priorytet:** P1  
 **Dowód:** AUDYT  
 **Kontrakt:** sekcje 3.1, 4.2, 4.3
@@ -141,9 +151,11 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Każdy badany kontrakt ma jednostki, znaczenie wyniku i przypadki szczególne; istnieją odnośniki do odpowiednich testów.
-- [ ] Tolerancje są uzasadnione dla konkretnych wielkości; nie wprowadzono jednej globalnej wartości dla każdej operacji.
-- [ ] Testy przypadków stycznych, równoległych, zerowych i skrajnych odpowiadają wybranemu modelowi.
+- [x] Każdy badany kontrakt ma jednostki, znaczenie wyniku i przypadki szczególne; istnieją odnośniki do odpowiednich testów.
+- [x] Tolerancje są uzasadnione dla konkretnych wielkości; nie wprowadzono jednej globalnej wartości dla każdej operacji.
+- [x] Testy przypadków stycznych, równoległych, zerowych i skrajnych odpowiadają wybranemu modelowi.
+
+**Wynik korekty 2026-09-09:** README/Javadoc opisują jednostki i granice geometrii, kolejność macierzy, jednostkowe kwaterniony, legacy progi wyznaczników, angular cutoff ray/plane i eps absolutne. CollisionBoundaryTest, NumericBoundaryTest, NormalizationTest oraz istniejące testy sprawdzają stykanie, równoległość, zero, limity i ekstremalne dane. Ray/box zachowuje małe niezerowe składowe; sweep liczy bezpośrednio przedziały czasu. Konstruktor AABB zachowuje niefinity bounds dla zgodności z walidującymi adapterami Ashgrid; collision je odrzuca.
 
 **Powiązania:** Ustalenia o Ray i transformacjach przekaż do [SPACE-002](../Ashspace/ISSUES.md#space-002) oraz [TRACE-002](../Ashtrace/ISSUES.md#trace-002).
 
@@ -151,7 +163,8 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## CORE-005 — Zweryfikować deklaracje algorytmów i kosztów
 
-**Status:** OTWARTE  
+**Status:** GOTOWE
+
 **Priorytet:** P2  
 **Dowód:** AUDYT  
 **Kontrakt:** sekcje 4.2, 4.4, 4.5
@@ -166,9 +179,11 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Tabela kosztów jest zgodna z kodem i wyjaśnia symbole, pamięć, inicjalizację oraz koszt amortyzowany.
-- [ ] Przybliżenia i przypadki bez danych są jawne; testy opierają się na odpowiednim wzorcu/warunkach, nie na kopii kodu.
-- [ ] Benchmarki, jeśli potrzebne do twierdzeń o szybkości, mają opis danych i środowiska.
+- [x] Tabela kosztów jest zgodna z kodem i wyjaśnia symbole, pamięć, inicjalizację oraz koszt amortyzowany.
+- [x] Przybliżenia i przypadki bez danych są jawne; testy opierają się na odpowiednim wzorcu/warunkach, nie na kopii kodu.
+- [x] Benchmarki, jeśli potrzebne do twierdzeń o szybkości, mają opis danych i środowiska.
+
+**Wynik korekty 2026-09-09:** Poprawiono brak znaku ruchu w formule parabolicznej P² (mediana danych malejących przed poprawką ~9999.998, wzorzec 5000.5). Skalowanie wag chroni przed przepełnieniem sumy/iloczynu. Dodano kontrolę liczników i danych niefinitych w badanych statystykach, testy resetu, danych stałych i granic. Tabela kosztów definiuje czas/pamięć, callbacki i amortyzację; poprawiono ReservoirSampler.add na rzeczywiste offer, opisano przybliżenie prawdopodobieństw reservoir oraz brak ogólnego błędu kwantyli. Nie ma twierdzeń benchmarkowych.
 
 **Powiązania:** Brak wymaganej zmiany innych bibliotek.
 
@@ -176,7 +191,8 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## CORE-006 — Wyznaczyć wspierane API i zasady migracji
 
-**Status:** OTWARTE  
+**Status:** GOTOWE
+
 **Priorytet:** P1  
 **Dowód:** DECYZJA  
 **Kontrakt:** sekcje 5, 5.1, 8
@@ -191,9 +207,11 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Lista/zasada wspieranego API obejmuje oficjalne przykłady; nie usunięto opublikowanych konstruktorów bez planu migracji.
-- [ ] Wybrano wersję odpowiednią do skutków, zachowując opublikowane artefakty bez nadpisania.
-- [ ] Quick start kompiluje się i pokazuje rzeczywiście wspierane zachowanie.
+- [x] Lista/zasada wspieranego API obejmuje oficjalne przykłady; nie usunięto opublikowanych konstruktorów bez planu migracji.
+- [x] Wybrano wersję odpowiednią do skutków, zachowując opublikowane artefakty bez nadpisania.
+- [x] Quick start kompiluje się i pokazuje rzeczywiście wspierane zachowanie.
+
+**Wynik korekty 2026-09-09:** Wsparcie obejmuje publiczne api oraz istniejący SplitMix64Random/constructor. Sygnatury zachowane; wersja robocza 1.0.2-SNAPSHOT, bez nadpisania 1.0.1. README kompiluje się z gotowym JAR podczas verify. Dokument migracji wyjaśnia zmiany wyników, odrzucanie błędnych danych i zachowanie zera. Izolowane clean verify: Ashgrid 53, Ashspace 31, Ashtrace 43, Ashnav 29 testów; dokładne wersje i SHA-256 JAR w docs/RELEASE.md.
 
 **Powiązania:** Konsumenci: Ashgrid, Ashspace, Ashtrace i Ashnav; wymagane sprawdzenie integracji dla zmienionych kontraktów.
 
@@ -201,7 +219,8 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## CORE-007 — Dostosować CI, pakowanie i dowody wydania
 
-**Status:** OTWARTE  
+**Status:** GOTOWE
+
 **Priorytet:** P1  
 **Dowód:** INSPEKCJA  
 **Kontrakt:** sekcje 2, 4.5, 6
@@ -216,21 +235,27 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Zapisano wynik mvn -B clean verify z wymaganymi testami oraz wersje JDK/Maven; CI obejmuje faktycznie utrzymywane gałęzie i PR-y.
-- [ ] Główny JAR, sources, Javadoc i wymagane zasoby są sprawdzone. Błędny Javadoc nie jest po cichu uznawany za poprawny; nie trzeba przy tym mechanicznie włączać każdej reguły stylistycznej doclint.
-- [ ] Wskazano używane cele publikacji, tag/wersję i dowody dostępności albo jawnie pozostawiono publikację jako niezweryfikowaną. Sam deploy nie służy jako test poprawek.
-- [ ] Sprawdzono efektywne zależności i ich scope; test integracyjny korzysta z zamierzonej wersji dolnej warstwy, a nie przypadkowej starej kopii z lokalnego Maven.
+- [x] Zapisano wynik mvn -B clean verify z wymaganymi testami oraz wersje JDK/Maven; CI obejmuje faktycznie utrzymywane gałęzie i PR-y.
+- [x] Główny JAR, sources, Javadoc i wymagane zasoby są sprawdzone. Błędny Javadoc nie jest po cichu uznawany za poprawny; nie trzeba przy tym mechanicznie włączać każdej reguły stylistycznej doclint.
+- [x] Wskazano używane cele publikacji, tag/wersję i dowody dostępności albo jawnie pozostawiono publikację jako niezweryfikowaną. Sam deploy nie służy jako test poprawek.
+- [x] Sprawdzono efektywne zależności i ich scope; test integracyjny korzysta z zamierzonej wersji dolnej warstwy, a nie przypadkowej starej kopii z lokalnego Maven.
+
+**Wynik korekty 2026-09-09:** mvn -B clean verify: PASS, 113 testów jednostkowych + 3 testy gotowych artefaktów, zero pominiętych; OpenJDK 25.0.2, Maven 3.9.16, release 21. Compiler/resources/clean/jar/install/deploy/surefire/failsafe/source/javadoc przypięte. Doclint all,-missing i failOnError=true; naprawiono 6 uprzednio ignorowanych błędów Javadoc. CI obejmuje wszystkie push branches i PR-y, Java 21/25; nazwy trzech JAR wynikają z finalName. JUnit wyłącznie test scope. Cele publikacji, gate tag/version i niezweryfikowany stan zdalny zapisano jawnie w docs/RELEASE.md; nie uruchomiono deploy.
 
 **Powiązania:** Wspólny wzorzec: [TEMPLATE-001](../Ashtemplate/ISSUES.md#template-001) i [TEMPLATE-002](../Ashtemplate/ISSUES.md#template-002). Tę korektę można wykonać niezależnie od napraw algorytmów. Istniejącego numeru wydania nie nadpisuj innym artefaktem.
 
 ## Stan przekazania i dziennik sesji
 
-**Na 2026-09-09:** wszystkie zadania pozostają OTWARTE. Utworzono dokumentację; nie wprowadzono korekt kodu, nie wykonano buildów bibliotek ani publikacji. Nie uznawaj samego dodania ISSUES.md za realizację żadnego zadania.
+**Stan historyczny przed korektą, 2026-09-09:** wszystkie zadania pozostawały OTWARTE. Utworzono dokumentację; nie wprowadzono korekt kodu, nie wykonano buildów bibliotek ani publikacji. Nie uznawaj samego dodania ISSUES.md za realizację żadnego zadania.
 
-**Sugerowany start:** [CORE-001](../Ashcore/ISSUES.md#core-001); następnie [CORE-002](../Ashcore/ISSUES.md#core-002) i [CORE-003](../Ashcore/ISSUES.md#core-003).
+**Aktualny stan po korekcie 2026-09-09:** CORE-001–CORE-007 GOTOWE w opisanym zakresie. Gałąź fix/ashcore-contract-v2-20260909, snapshot wejściowy 7649935, wersja robocza 1.0.2-SNAPSHOT. Szczegółowe dowody, migracja i integracja: [docs/RELEASE.md](docs/RELEASE.md). Zamknięcie tych zadań nie oznacza pełnego audytu każdego publicznego API ani potwierdzenia publikacji.
+
+**Następny krok:** uruchomić zdalne CI na Java 21/25 i przed rzeczywistym wydaniem sprawdzić dostępność nowego numeru oraz konfigurację destynacji. W repozytoriach konsumentów kontynuować GRID-001/GRID-005, SPACE-002/SPACE-003 i TRACE-002/TRACE-003 według ich backlogów; zmiana lokalnego Ashcore nie podmienia opublikowanych zależności.
 
 Po kolejnej sesji dopisz wiersz i uzupełnij statusy odpowiednich zadań. Zapisz także nieudane próby i ograniczenia środowiska; nie opisuj kontroli niewykonanej jako zaliczonej.
 
 | Data / commit | ID i decyzja | Zmiana | Polecenie / test i rzeczywisty wynik | Pozostałe zależności / następny krok |
 | --- | --- | --- | --- | --- |
 | 2026-09-09 / punkt odniesienia powyżej | Wszystkie: OTWARTE | Utworzenie planu korekt | Inspekcja statyczna; testów bibliotek nie uruchomiono | Rozpocząć od wskazanego P1 |
+
+| 2026-09-09 / commit zawierający ten wpis; snapshot 7649935 | CORE-001–CORE-007: GOTOWE | Korekty normalizacji, geometrii, P², wag, walidacji, dokumentacji, CI i pakowania; zachowana zgodność AABB po teście Ashgrid | Bazowe 88 testów PASS; pierwsze 13 regresji: 10 FAIL; końcowe clean verify: 113 + 3 PASS. Cztery izolowane buildy konsumentów: 156 testów PASS. IntelliJ build PASS. JDK/Maven, wersje artefaktów, SHA i polecenia: docs/RELEASE.md | Publikacja i zdalne CI niewykonane; nie nadpisano wydanych artefaktów. Przekazać ustalenia dolnej warstwy do backlogów konsumentów |

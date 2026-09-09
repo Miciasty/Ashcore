@@ -6,7 +6,7 @@ package nsk.nu.ashcore.api.math;
  */
 public final class MathUtil {
     private MathUtil() {}
-    /** Clamps v into [min, max]. Assumes min <= max. */
+    /** Clamps v into [min, max]. Assumes {@code min <= max}. */
     public static double clamp(double v, double min, double max) {
         if (v < min) return min;
         if (v > max) return max;
@@ -25,7 +25,7 @@ public final class MathUtil {
     }
     /** Linear interpolation between a and b at t in [0,1]. */
     public static double lerp(double a, double b, double t) { return a + (b - a) * t; }
-    /** True if |a-b| <= eps. */
+    /** True if {@code |a-b| <= eps}; eps must be finite and non-negative. */
     public static boolean near(double a, double b, double eps) { return Math.abs(a - b) <= eps; }
     /** 3D hypot: sqrt(x^2 + y^2 + z^2) with correct scaling for large values. */
     public static double hypot3(double x, double y, double z) {

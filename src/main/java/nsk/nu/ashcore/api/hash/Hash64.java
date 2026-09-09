@@ -3,6 +3,8 @@ package nsk.nu.ashcore.api.hash;
 /**
  * Lightweight 64-bit hashing utilities for stable identifiers and seed mixing.
  * Not cryptographic. Prefer MessageDigest for security-sensitive cases.
+ * FNV-1a and mix64 outputs are stable in Ashcore 1.x; long overflow is intentional modulo 2^64 arithmetic.
+ * Byte hashing is O(n) time/O(1) extra space; string hashing also allocates n UTF-8 bytes.
  */
 public final class Hash64 {
     private Hash64() {}

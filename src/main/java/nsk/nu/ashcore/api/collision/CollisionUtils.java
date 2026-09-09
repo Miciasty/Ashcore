@@ -30,7 +30,12 @@ public final class CollisionUtils {
         return 0.0;
     }
 
-    /** Ray vs Plane: returns t, or +INF if parallel or behind. */
+    /**
+     * Ray vs plane distance in point units, or positive infinity if behind or treated as parallel.
+     * The absolute unit-normal/direction dot product below GEOMETRY_EPS is treated as parallel,
+     * including coplanar rays. This dimensionless angular cutoff may omit distant shallow-angle hits.
+     * Requires finite, representable dot products and distances; no physical response is computed.
+     */
     public static double rayVsPlaneT(Ray ray, Plane plane){
         double denom = plane.normal().dot(ray.direction());
         if (Math.abs(denom) < NumericTolerance.GEOMETRY_EPS) return Double.POSITIVE_INFINITY;

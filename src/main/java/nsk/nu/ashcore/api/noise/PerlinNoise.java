@@ -9,6 +9,9 @@ import nsk.nu.ashcore.api.random.DeterministicRandom;
  * - No allocations during sampling
  *
  * Use {@link FractalNoise} for FBM/turbulence/ridge combinations.
+ * Coordinates are dimensionless lattice positions in [-2^31,2^31); outside/non-finite values are rejected.
+ * The lattice repeats every 256 units. Sampling is immutable and repeatable for the same table and inputs
+ * in the same environment/version; no cross-release or cross-platform bitwise promise is made for noise.
  */
 public final class PerlinNoise implements Noise2D, Noise3D {
 
@@ -16,7 +19,8 @@ public final class PerlinNoise implements Noise2D, Noise3D {
 
     /**
      * Builds a Perlin permutation table using the provided RNG.
-     * The table is duplicated to avoid masking on each access.
+     * Consumes 255 nextUnitDouble calls in order; later RNG state changes do not affect this instance.
+     * The table is duplicated to avoid masking on each access. Construction uses O(1) fixed storage/work.
      */
     public PerlinNoise(DeterministicRandom rng) {
         int[] p = new int[256];
@@ -83,7 +87,11 @@ public final class PerlinNoise implements Noise2D, Noise3D {
         return lerp(y1, y2, w);
     }
 
-    private static int fastFloor(double x) { int i = (int)x; return x < i ? i - 1 : i; }
+    private static int fastFloor(double x) {
+        if (!(x >= Integer.MIN_VALUE && x < 0x1.0p31)) throw new IllegalArgumentException("Coordinate outside [-2^31,2^31)");
+        int i = (int)x;
+        return x < i ? i - 1 : i;
+    }
 
     private static double fade(double t) {
         return t * t * t * (t * (t * 6 - 15) + 10);

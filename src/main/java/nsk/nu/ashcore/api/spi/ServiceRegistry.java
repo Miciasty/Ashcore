@@ -12,7 +12,11 @@ import java.util.Set;
  * Type-safe registry backed by {@link ServiceLoader}.
  *
  * <p>The registry is immutable after construction. Providers are loaded eagerly and
- * indexed by {@link Identified#id()}.</p>
+ * indexed by {@link Identified#id()}. Loading can execute provider constructors, static initialization
+ * and id() methods; their effects are not rolled back on failure. ServiceLoader errors propagate.
+ * Duplicate IDs throw IllegalStateException; invalid IDs throw IllegalArgumentException.
+ * Select algorithms by explicit ID: neither enumeration order nor provider initialization order is guaranteed.
+ * Collection membership is immutable, but provider instances may be mutable and require synchronization.</p>
  *
  * @param <T> SPI type that also implements {@link Identified}
  */
@@ -42,7 +46,8 @@ public final class ServiceRegistry<T extends Identified> {
     }
 
     /**
-     * Creates a registry using the current thread context class loader.
+     * Uses the current thread context class loader, falling back to the service type's loader and
+     * then the system class loader if null. Each call eagerly builds a new registry.
      *
      * @param type SPI type to load
      * @param <T> SPI generic type
@@ -105,7 +110,7 @@ public final class ServiceRegistry<T extends Identified> {
     }
 
     /**
-     * Returns all loaded provider identifiers.
+     * Returns all loaded provider identifiers in unspecified iteration order.
      *
      * @return immutable set of ids
      */
@@ -114,7 +119,7 @@ public final class ServiceRegistry<T extends Identified> {
     }
 
     /**
-     * Returns all loaded providers.
+     * Returns all loaded providers in unspecified iteration order; instances are not copied.
      *
      * @return immutable collection of providers
      */

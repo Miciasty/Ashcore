@@ -2,6 +2,7 @@ package nsk.nu.ashcore.api.noise;
 
 import nsk.nu.ashcore.api.hash.Hash64;
 
+/** Stateless hash-based value noise. Repeatability is scoped to one library version and environment. */
 public final class HashGridNoise {
     private HashGridNoise(){}
 
@@ -10,8 +11,13 @@ public final class HashGridNoise {
         long h = Hash64.mix64(seed ^ Hash64.mix64((x * 0x9E3779B97F4A7C15L) ^ (y * 0xBF58476D1CE4E5B9L)));
         return ((h >>> 11) & ((1L<<53)-1)) * 0x1.0p-53;
     }
-    /** Trilinear-smooth 3D noise from integer grid corners. */
+    /**
+     * Value noise interpolated with cubic smoothstep from eight corners, in [0,1) within rounding.
+     * Dimensionless coordinates must be finite and in [Integer.MIN_VALUE,Integer.MAX_VALUE),
+     * leaving room for the upper lattice corner. Invalid coordinates throw IllegalArgumentException.
+     */
     public static double value3D(double x, double y, double z, long seed){
+        requireCoordinate(x); requireCoordinate(y); requireCoordinate(z);
         int X=(int)Math.floor(x), Y=(int)Math.floor(y), Z=(int)Math.floor(z);
         double fx=x-X, fy=y-Y, fz=z-Z;
         double sx = fx*fx*(3-2*fx), sy = fy*fy*(3-2*fy), sz = fz*fz*(3-2*fz);
@@ -29,4 +35,7 @@ public final class HashGridNoise {
         return lerp(iy0, iy1, sz);
     }
     private static double lerp(double a,double b,double t){ return a + (b-a)*t; }
+    private static void requireCoordinate(double value) {
+        if (!(value >= Integer.MIN_VALUE && value < Integer.MAX_VALUE)) throw new IllegalArgumentException("Coordinate outside integer lattice range");
+    }
 }

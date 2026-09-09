@@ -2,7 +2,12 @@ package nsk.nu.ashcore.api.noise;
 
 /**
  * Fractal combinations of base noise (FBM, turbulence, ridge).
- * All methods are pure O(octaves) and stateless.
+ * Stateless; repeatability and thread safety also require a repeatable, safe caller-supplied noise function.
+ * With o=max(0,octaves) and callback cost C, time is O(o*C) and own extra memory O(1).
+ * Calls the callback once per octave in increasing octave order; non-positive octaves return zero.
+ * Coordinates are in the base noise's units; lacunarity and gain are dimensionless frequency/amplitude
+ * multipliers. Callers must keep each sampled coordinate within the base noise's domain and all arithmetic
+ * finite. Results are unnormalized sums, not necessarily in [-1,1]; no generic error bound is supplied.
  */
 public final class FractalNoise {
     private FractalNoise(){}

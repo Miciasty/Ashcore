@@ -1,6 +1,12 @@
 package nsk.nu.ashcore.api.math;
 
-/** Immutable 4x4 matrix, row-major. */
+/**
+ * Immutable row-major 4x4 matrix acting on column vectors. a.mul(b) applies b first, then a.
+ * For affine transforms, use w=1 for points and w=0 for directions; translation uses point units.
+ * Arithmetic follows Java double rules. Inversion requires finite entries and representable intermediates;
+ * absolute determinant thresholds are legacy singularity guards, not relative conditioning/error guarantees.
+ * Large translations, cancellation and ill-conditioned matrices can lose precision.
+ */
 public record Matrix4(double m00, double m01, double m02, double m03,
                       double m10, double m11, double m12, double m13,
                       double m20, double m21, double m22, double m23,
@@ -75,7 +81,7 @@ public record Matrix4(double m00, double m01, double m02, double m03,
         );
     }
 
-    /** this * [x,y,z,w]^T -> [x',y',z',w'] */
+    /** this * [x,y,z,w]^T, returned in a new owned array; no perspective division is performed. */
     public double[] mul(double x, double y, double z, double w) {
         double nx = m00*x + m01*y + m02*z + m03*w;
         double ny = m10*x + m11*y + m12*z + m13*w;
@@ -113,8 +119,13 @@ public record Matrix4(double m00, double m01, double m02, double m03,
         return s0*c5 - s1*c4 + s2*c3 + s3*c2 - s4*c1 + s5*c0;
     }
 
-    /** Full inverse via adjugate. */
+    /**
+     * Full inverse via adjugate. Rejects non-finite entries with IllegalArgumentException and
+     * non-finite or absolute determinant below EPS with ArithmeticException. EPS is in determinant units.
+     * A representable determinant does not ensure well-conditioned cofactors or an accurate inverse.
+     */
     public Matrix4 inverse() {
+        requireFinite();
         double s0 = m00*m11 - m10*m01;
         double s1 = m00*m12 - m10*m02;
         double s2 = m00*m13 - m10*m03;
@@ -130,7 +141,7 @@ public record Matrix4(double m00, double m01, double m02, double m03,
         double c0 = m20*m31 - m30*m21;
 
         double det = s0*c5 - s1*c4 + s2*c3 + s3*c2 - s4*c1 + s5*c0;
-        if (Math.abs(det) < NumericTolerance.EPS) throw new ArithmeticException("Singular matrix");
+        if (!Double.isFinite(det) || Math.abs(det) < NumericTolerance.EPS) throw new ArithmeticException("Singular or overflowing matrix");
         double invDet = 1.0 / det;
 
         double n00 = (+m11*c5 - m12*c4 + m13*c3) * invDet;
@@ -164,9 +175,12 @@ public record Matrix4(double m00, double m01, double m02, double m03,
     /**
      * Fast inverse for an affine matrix:
      * [A t; 0 0 0 1], where A is 3x3 (rotation+scale+shear).
-     * Verifies the last row ~ [0,0,0,1].
+     * Requires finite entries; last-row components may differ from [0,0,0,1] by at most EPS (absolute).
+     * The accepted last-row deviations are discarded. The 3x3 determinant uses the same absolute
+     * EPS guard as inverse(), in 3x3 determinant units. Scaling all entries can change this decision.
      */
     public Matrix4 inverseAffine() {
+        requireFinite();
         if (Math.abs(m30) > NumericTolerance.EPS || Math.abs(m31) > NumericTolerance.EPS || Math.abs(m32) > NumericTolerance.EPS || Math.abs(m33 - 1.0) > NumericTolerance.EPS) {
             throw new IllegalArgumentException("Not affine [*,*,*,*; *,*,*,*; *,*,*,*; 0,0,0,1]");
         }
@@ -178,7 +192,7 @@ public record Matrix4(double m00, double m01, double m02, double m03,
         double detA =  a00*(a11*a22 - a12*a21)
                 - a01*(a10*a22 - a12*a20)
                 + a02*(a10*a21 - a11*a20);
-        if (Math.abs(detA) < NumericTolerance.EPS) throw new ArithmeticException("Singular affine 3x3");
+        if (!Double.isFinite(detA) || Math.abs(detA) < NumericTolerance.EPS) throw new ArithmeticException("Singular or overflowing affine 3x3");
 
         double invA00 = ( a11*a22 - a12*a21) / detA;
         double invA01 = (-a01*a22 + a02*a21) / detA;
@@ -204,5 +218,13 @@ public record Matrix4(double m00, double m01, double m02, double m03,
                 invA20, invA21, invA22, itz,
                 0,      0,      0,      1
         );
+    }
+    private void requireFinite() {
+        if (!Double.isFinite(m00) || !Double.isFinite(m01) || !Double.isFinite(m02) || !Double.isFinite(m03) ||
+                !Double.isFinite(m10) || !Double.isFinite(m11) || !Double.isFinite(m12) || !Double.isFinite(m13) ||
+                !Double.isFinite(m20) || !Double.isFinite(m21) || !Double.isFinite(m22) || !Double.isFinite(m23) ||
+                !Double.isFinite(m30) || !Double.isFinite(m31) || !Double.isFinite(m32) || !Double.isFinite(m33)) {
+            throw new IllegalArgumentException("Matrix must be finite");
+        }
     }
 }

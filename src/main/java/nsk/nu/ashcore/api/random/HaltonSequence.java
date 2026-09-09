@@ -14,7 +14,10 @@ import java.util.List;
  * </ul>
  *
  * <p>Use this when iterating many consecutive samples. For random access to the i-th index,
- * {@link LowDiscrepancy#halton(int, int)} stays O(log i) and by design jest do tego lepsze.</p>
+ * {@link LowDiscrepancy#halton(int, int)} computes individual indices in O(log i).</p>
+ * <p>Mutable and not thread-safe. For fixed base b, worst-case next and state size are O(log_b(i+1))
+ * at index i; O(1) amortized time covers consecutive calls from reset. Incremental rounding may drift
+ * from direct evaluation. Bases need not be prime for one sequence, but use distinct primes across dimensions.</p>
  */
 public final class HaltonSequence {
     private final int base;
@@ -24,7 +27,7 @@ public final class HaltonSequence {
     private int index = 0;
 
     /**
-     * @param base prime base > 1 (typowo 2, 3, 5, 7, ...)
+     * @param base integer base greater than 1 (usually prime: 2, 3, 5, 7, ...)
      */
     public HaltonSequence(int base) {
         if (base <= 1) throw new IllegalArgumentException("base > 1 required");
@@ -41,9 +44,10 @@ public final class HaltonSequence {
     }
     /**
      * Advances to the next value and returns it.
-     * Amortized O(1): expected number of updated digits ≈ 1 + 1/(base-1).
+     * Amortized O(1) over consecutive calls; throws IllegalStateException after Integer.MAX_VALUE samples.
      */
     public double next() {
+        if (index == Integer.MAX_VALUE) throw new IllegalStateException("Sequence exhausted; reset required");
         incrementDigits();
         index++;
         return value;

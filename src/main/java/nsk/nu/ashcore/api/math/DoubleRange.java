@@ -2,7 +2,7 @@ package nsk.nu.ashcore.api.math;
 
 /**
  * Inclusive double range: [min, max].
- * Immutable, normalized; guarantees min <= max.
+ * Immutable, normalized; guarantees {@code min <= max}.
  */
 public record DoubleRange(double min, double max) {
 

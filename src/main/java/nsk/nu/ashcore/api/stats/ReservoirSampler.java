@@ -17,19 +17,20 @@ import java.util.List;
  *   <li>For the i-th item (1-based), draw {@code j ~ U[0, i)}.
  *       If {@code j < k}, replace {@code reservoir[j]} with the new item.</li>
  * </ol>
- * After processing {@code n} items, each has probability exactly {@code k/n} to be present.
+ * Ideal Algorithm R gives each item probability min(1, k/n). This implementation scales a finite-resolution
+ * uniform double to an index, so probabilities are approximate, particularly for counts above 2^53.
  *
  * <p>Determinism: all randomness comes from {@link DeterministicRandom}. With the same seed
- * and the same stream order you will get identical results across runs.
+ * algorithm version, initial RNG state and stream/call order you get identical results in one environment.
  *
- * <h3>Complexity</h3>
+ * <h2>Complexity</h2>
  * <ul>
  *   <li>{@link #offer(Object)}: O(1)</li>
  *   <li>{@link #snapshot()}: O(k)</li>
  *   <li>Memory: O(k)</li>
  * </ul>
  *
- * <h3>Thread-safety</h3>
+ * <h2>Thread-safety</h2>
  * Not thread-safe. Wrap externally if multiple producers call {@code offer} concurrently.
  *
  * @param <T> item type (nulls are allowed and will be sampled like any other value)
@@ -70,6 +71,7 @@ public final class ReservoirSampler<T> {
      * O(1) time; replaces an existing item with decreasing probability as the stream grows.
      */
     public void offer(T item) {
+        if (seen == Long.MAX_VALUE) throw new IllegalStateException("Sample limit reached; reset required");
         seen++;
         final int cap = reservoir.length;
 
@@ -85,7 +87,7 @@ public final class ReservoirSampler<T> {
     }
 
     /**
-     * Clears all state and empties the reservoir.
+     * Empties the reservoir and resets counters in O(k); does not reset the supplied RNG.
      */
     public void reset() {
         Arrays.fill(reservoir, null);
@@ -94,7 +96,7 @@ public final class ReservoirSampler<T> {
     }
 
     /**
-     * @return an unmodifiable view of the currently filled items (size ≤ k).
+     * @return an unmodifiable shallow snapshot of the currently filled items (size ≤ k).
      *         Copies out the filled prefix only; never exposes null tail.
      */
     @SuppressWarnings("unchecked")
