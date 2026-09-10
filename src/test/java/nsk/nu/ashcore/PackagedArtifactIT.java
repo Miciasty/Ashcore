@@ -42,6 +42,12 @@ class PackagedArtifactIT {
             assertNotNull(sources.getJarEntry(entry + ".java"));
             assertNotNull(docs.getJarEntry(entry + ".html"));
             assertNotNull(docs.getJarEntry("index.html"));
+            for (String added : new String[]{"geometry/OrientedBox", "collision/IntersectionInterval", "collision/Contact"}) {
+                String name = "nsk/nu/ashcore/api/" + added;
+                assertNotNull(jar.getJarEntry(name + ".class"));
+                assertNotNull(sources.getJarEntry(name + ".java"));
+                assertNotNull(docs.getJarEntry(name + ".html"));
+            }
             assertFalse(jar.stream().anyMatch(e -> e.getName().contains("/testing/") || e.getName().startsWith("org/junit/")));
             // Ashcore supplies a registry, but has no built-in ServiceLoader providers.
             assertFalse(jar.stream().anyMatch(e -> e.getName().startsWith("META-INF/services/")));

@@ -1,9 +1,11 @@
 package nsk.nu.ashcore.api.collision;
 
 import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
+import nsk.nu.ashcore.api.geometry.OrientedBox;
 import nsk.nu.ashcore.api.geometry.Ray;
 import nsk.nu.ashcore.api.geometry.Segment3;
 import nsk.nu.ashcore.api.geometry.Sphere;
+import nsk.nu.ashcore.api.math.Quaternion;
 import nsk.nu.ashcore.api.math.Vector3;
 
 /**
@@ -13,6 +15,199 @@ import nsk.nu.ashcore.api.math.Vector3;
  */
 public final class CollisionTests {
     private CollisionTests() {}
+
+    /**
+     * Full supporting-line entry/exit distances when the forward ray intersects the closed OBB.
+     * An inside origin retains negative entry; an interval entirely behind the origin is a miss.
+     * Local differences/rotated coordinates and every nonparallel slab ratio must be finite and representable
+     * or IllegalArgumentException is thrown. Only exact zero components are parallel. No contact tolerance is
+     * added; rounded rotation/slab arithmetic can misclassify tangency or tiny gaps. O(1) time/space.
+     */
+    public static IntersectionInterval rayVsOrientedBoxInterval(Ray ray, OrientedBox box) {
+        SlabResult r = orientedBoxSlab(ray.origin(), ray.direction(), box);
+        if (!r.hit || r.tExit < 0) return IntersectionInterval.miss();
+        return new IntersectionInterval(r.tEnter, r.tExit);
+    }
+
+    /** First OBB contact distance, zero inside/on the box, +infinity on a miss; same limits as rayVsOrientedBoxInterval. */
+    public static double rayVsOrientedBoxT(Ray ray, OrientedBox box) {
+        IntersectionInterval r = rayVsOrientedBoxInterval(ray, box);
+        return r.hit() ? Math.max(0.0, r.tEnter()) : Double.POSITIVE_INFINITY;
+    }
+
+    /**
+     * Closed segment/OBB interval clipped to [0,1], in dimensionless fractions evaluated by segment.at(t).
+     * A zero-length segment inside/on the box returns [0,1]; outside returns a miss. Both endpoints count.
+     * Endpoints and b-a must be finite; other numeric limits match rayVsOrientedBoxInterval. O(1) time/space.
+     */
+    public static IntersectionInterval segmentVsOrientedBoxInterval(Segment3 segment, OrientedBox box) {
+        requireFinite(segment.a());
+        requireFinite(segment.b());
+        Vector3 direction = segment.b().sub(segment.a());
+        requireFinite(direction);
+        SlabResult r = orientedBoxSlab(segment.a(), direction, box);
+        if (!r.hit || r.tExit < 0 || r.tEnter > 1) return IntersectionInterval.miss();
+        return new IntersectionInterval(Math.max(0.0, r.tEnter), Math.min(1.0, r.tExit));
+    }
+
+    /** First segment/OBB fraction, zero inside/on the box, +infinity on a miss; same limits as segmentVsOrientedBoxInterval. */
+    public static double segmentVsOrientedBoxT(Segment3 segment, OrientedBox box) {
+        return segmentVsOrientedBoxInterval(segment, box).tEnter();
+    }
+
+    /**
+     * Closed sphere/OBB overlap, including zero extents/radius. Tests the closest box point in local coordinates.
+     * Center differences and rotated coordinates must be finite or IllegalArgumentException is thrown.
+     * No tolerance is added; tiny features/gaps and tangency are subject to double rounding. O(1) time/space.
+     */
+    public static boolean sphereVsOrientedBox(Sphere sphere, OrientedBox box) {
+        return sphereVsBox(new Sphere(localPoint(sphere.center(), box), sphere.radius()), localBox(box));
+    }
+
+    /**
+     * Closed AABB/OBB overlap. Requires finite bounds and representable AABB widths, otherwise throws
+     * IllegalArgumentException. Other guarantees/limits match orientedBoxVsOrientedBox. O(1) time/space.
+     */
+    public static boolean boxVsOrientedBox(AxisAlignedBox a, OrientedBox b) {
+        requireFiniteBox(a);
+        Vector3 width = a.max().sub(a.min());
+        requireFinite(width);
+        Vector3 half = width.mul(0.5);
+        return orientedBoxVsOrientedBox(new OrientedBox(a.min().add(half), half, Quaternion.identity()), b);
+    }
+
+    /**
+     * Closed static OBB/OBB overlap using six face axes and nine edge cross-product axes, including degeneracies.
+     * Exactly zero cross products are skipped; nearly parallel axes are tested without an angular cutoff.
+     * Finite center differences are required or IllegalArgumentException is thrown. Scaled projections avoid
+     * overflow but do not give exact predicates or an error bound near contact/large relative scales.
+     * No shape inflation/contact epsilon is applied. O(1) time/space; fixed-size arrays/vectors may allocate.
+     */
+    public static boolean orientedBoxVsOrientedBox(OrientedBox a, OrientedBox b) {
+        Vector3 delta = b.center().sub(a.center());
+        requireFinite(delta);
+        double scale = Math.max(maxAbs(delta), Math.max(maxAbs(a.halfExtents()), maxAbs(b.halfExtents())));
+        if (scale == 0) return true;
+        delta = delta.div(scale);
+        Vector3 ah = a.halfExtents().div(scale), bh = b.halfExtents().div(scale);
+        Vector3[] aa = boxAxes(a), ba = boxAxes(b);
+        for (int i = 0; i < 3; i++) {
+            if (separated(delta, ah, aa, bh, ba, aa[i]) || separated(delta, ah, aa, bh, ba, ba[i])) return false;
+        }
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                Vector3 axis = aa[i].cross(ba[j]);
+                if (maxAbs(axis) != 0 && separated(delta, ah, aa, bh, ba, axis.normalized())) return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Sphere/sphere contact witnesses. Normal points from A's center to B's; coincident centers choose global +X.
+     * Depth is radiusA + radiusB - centerDistance, including full containment. Distinct-center argument swaps
+     * negate the normal and swap witnesses; the global coincident-center tie is an explicit exception.
+     * No contact epsilon is added. Finite representable differences, depth and surface coordinates are required;
+     * unsupported arithmetic throws IllegalArgumentException. O(1) time/space. See Contact for field meanings.
+     */
+    public static Contact sphereVsSphereContact(Sphere a, Sphere b) {
+        if (!sphereVsSphere(a, b)) return Contact.miss();
+        Vector3 delta = b.center().sub(a.center());
+        double scale = Math.max(maxAbs(delta), Math.max(a.radius(), b.radius()));
+        Vector3 normal = maxAbs(delta) == 0 ? new Vector3(1, 0, 0) : delta.normalized();
+        double depth = scale == 0 ? 0 : Math.max(0.0, a.radius()/scale + b.radius()/scale - delta.div(scale).length()) * scale;
+        return new Contact(depth, normal, a.center().add(normal.mul(a.radius())), b.center().sub(normal.mul(b.radius())));
+    }
+
+    /**
+     * Sphere (A)/AABB (B) contact. Outside centers use the normal toward the closest box point and radius minus
+     * distance as depth. Inside/on centers choose the nearest face, ties X-min, X-max, Y-min, Y-max, Z-min, Z-max;
+     * normal is opposite that face's outward direction and depth is radius plus face clearance.
+     * Witnesses satisfy pointA-pointB = normal*depth within rounding, including full containment/zero sizes.
+     * Common rigid transformations preserve unique results only when the transformed box is still axis aligned;
+     * global face tie choices need not rotate with the scene. Numeric limits match sphereVsSphereContact; finite
+     * bounds and face differences are required. No epsilon is added. O(1) time/space.
+     */
+    public static Contact sphereVsBoxContact(Sphere sphere, AxisAlignedBox box) {
+        if (!sphereVsBox(sphere, box)) return Contact.miss();
+        Vector3 center = sphere.center();
+        Vector3 pointB = CollisionUtils.closestPointOnBox(center, box);
+        Vector3 delta = pointB.sub(center);
+        Vector3 normal;
+        double depth;
+        if (maxAbs(delta) != 0) {
+            normal = delta.normalized();
+            depth = Math.max(0.0, sphere.radius() - delta.length());
+        } else {
+            double nearest = Double.POSITIVE_INFINITY;
+            int faceAxis = -1, faceSign = 0;
+            for (int axis = 0; axis < 3; axis++) {
+                double lower = comp(center, axis) - comp(box.min(), axis);
+                double upper = comp(box.max(), axis) - comp(center, axis);
+                if (!Double.isFinite(lower) || !Double.isFinite(upper)) {
+                    throw new IllegalArgumentException("Face differences must be finite");
+                }
+                if (lower < nearest) { nearest = lower; faceAxis = axis; faceSign = -1; }
+                if (upper < nearest) { nearest = upper; faceAxis = axis; faceSign = 1; }
+            }
+            normal = axisVector(faceAxis).mul(-faceSign);
+            double face = faceSign < 0 ? comp(box.min(), faceAxis) : comp(box.max(), faceAxis);
+            pointB = switch (faceAxis) {
+                case 0 -> center.withX(face);
+                case 1 -> center.withY(face);
+                default -> center.withZ(face);
+            };
+            depth = sphere.radius() + nearest;
+        }
+        return new Contact(depth, normal, center.add(normal.mul(sphere.radius())), pointB);
+    }
+
+    /** Reverses sphereVsBoxContact's arguments, witnesses and normal, including face ties; identical units and limits. */
+    public static Contact boxVsSphereContact(AxisAlignedBox box, Sphere sphere) {
+        Contact c = sphereVsBoxContact(sphere, box);
+        return c.hit() ? new Contact(c.depth(), c.normal().mul(-1), c.pointB(), c.pointA()) : c;
+    }
+
+    private static SlabResult orientedBoxSlab(Vector3 origin, Vector3 direction, OrientedBox box) {
+        Vector3 localDirection = box.orientation().conjugate().rotate(direction);
+        requireFinite(localDirection);
+        // Preserve the input parameter: constructing a new Ray would renormalize this direction.
+        return boxSlab(localPoint(origin, box), localDirection, localBox(box), true);
+    }
+
+    private static Vector3 localPoint(Vector3 point, OrientedBox box) {
+        Vector3 delta = point.sub(box.center());
+        requireFinite(delta);
+        Vector3 local = box.orientation().conjugate().rotate(delta);
+        requireFinite(local);
+        return local;
+    }
+
+    private static AxisAlignedBox localBox(OrientedBox box) {
+        return new AxisAlignedBox(box.halfExtents().mul(-1), box.halfExtents());
+    }
+
+    private static Vector3[] boxAxes(OrientedBox box) {
+        return new Vector3[]{box.orientation().rotate(axisVector(0)), box.orientation().rotate(axisVector(1)),
+                box.orientation().rotate(axisVector(2))};
+    }
+
+    private static Vector3 axisVector(int axis) {
+        return switch (axis) {
+            case 0 -> new Vector3(1, 0, 0);
+            case 1 -> new Vector3(0, 1, 0);
+            default -> new Vector3(0, 0, 1);
+        };
+    }
+
+    private static boolean separated(Vector3 delta, Vector3 ah, Vector3[] aa, Vector3 bh, Vector3[] ba, Vector3 axis) {
+        double radiusA = 0, radiusB = 0;
+        for (int i = 0; i < 3; i++) {
+            radiusA += comp(ah, i) * Math.abs(aa[i].dot(axis));
+            radiusB += comp(bh, i) * Math.abs(ba[i].dot(axis));
+        }
+        return Math.abs(delta.dot(axis)) > radiusA + radiusB;
+    }
 
     /**
      * First ray/sphere contact distance, zero for an origin inside/on the sphere, positive infinity for a miss.
@@ -129,6 +324,10 @@ public final class CollisionTests {
     }
 
     private static SlabResult boxSlab(Vector3 origin, Vector3 direction, AxisAlignedBox box) {
+        return boxSlab(origin, direction, box, false);
+    }
+
+    private static SlabResult boxSlab(Vector3 origin, Vector3 direction, AxisAlignedBox box, boolean checked) {
         requireFiniteBox(box);
         double tEnter = Double.NEGATIVE_INFINITY;
         double tExit = Double.POSITIVE_INFINITY;
@@ -148,6 +347,9 @@ public final class CollisionTests {
 
             double t0 = (min - o) / d;
             double t1 = (max - o) / d;
+            if (checked && (!Double.isFinite(t0) || !Double.isFinite(t1))) {
+                throw new IllegalArgumentException("Slab differences and ratios must be representable");
+            }
             int nearSign = -1;
             int farSign = 1;
 

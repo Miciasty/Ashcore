@@ -1,5 +1,88 @@
 # Development verification and release procedure
 
+## 1.2.0-SNAPSHOT geometry — 2026-09-10
+
+This development version implements CORE-011/CORE-012 and completes CORE-013's assessment under Blackframe
+contract revision 2.0. Branch: `fix/ashcore-geometry-contracts-20260910`; starting snapshot: `c577243`;
+previous implementation: `e519440`. The correction commit is the commit adding this section.
+All work, including temporary consumer builds, stayed inside Ashcore. No release tag, remote CI run or publication
+was made; the existing publication destinations below remain unverified for 1.2.0-SNAPSHOT.
+
+### API and compatibility
+
+Added `OrientedBox`, `IntersectionInterval`, `Contact` and ten public static query methods on `CollisionTests`.
+The OBB queries support ray/segment, sphere, AABB and OBB pairs, including full forward-ray intersection intervals
+that retain negative entry at an inside start. Contact methods support sphere/sphere and sphere/AABB in both orders.
+They specify surface witnesses, depth, normal direction, containment and deterministic tie choices.
+See [geometry decisions](GEOMETRY.md) and README for supported ranges, units, rounding limitations and O(1) costs.
+The 1.2.0 minor version separates these additions from the previous development artifact.
+
+`javap -public` comparison of all 61 previous class entries against the new main JAR found ten added query methods
+and **zero removed public signatures**. Three new class entries bring the JAR to 64. No production dependency was added.
+Existing boolean queries, `Hit`, `SweptAABB.Result`, RNG streams and supported constructors retain their contracts.
+Existing callers require no migration; new callers opt into the richer result methods. An overlap boolean can accept
+extreme inputs whose depth/witnesses cannot fit in double; contact-result queries explicitly reject those results.
+
+CORE-013 is complete as an assessment with implementation deferred. The candidate model, analytic missed-contact
+examples, conservative speed bound, missing numerical proof, costs and independent verification plan are in GEOMETRY.md.
+This version provides no continuous-rotation query and no physical collision response.
+
+### Verification evidence
+
+Executed on Windows 11 amd64, Oracle OpenJDK **25.0.2+10-69**, Maven **3.9.16**, compiler **release 21**:
+
+```sh
+mvn -B -s .verification/extensions-settings.xml \
+  -Dmaven.repo.local=G:/Github/Blackframe/Ashcore/.verification/extensions-repository \
+  clean verify org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree
+```
+
+**165 unit tests and 3 packaged-artifact integration tests passed**, with zero failures, errors or skips.
+The 144 baseline tests passed before implementation. The first focused run of the 21 new tests also passed;
+these are acceptance tests for additive API, not reproduced failures of the old API.
+The OBB tests compare 600 seeded pairs with an independent vertex/edge-clipping reference, check both argument
+orders and require fixtures where a cross-product axis is necessary to prove separation. Other cases cover
+inside ray entries, clipped/reversed/stationary segments, tangency, containing/degenerate boxes, almost-parallel
+axes, rigid transformations, identity agreement with existing methods, scales 1e-140 through 1e300 and rejected overflow.
+Contact tests verify witnesses on surfaces, normal/depth relations, distinct/coincident centers, full containment,
+argument reversal, permitted rigid transforms, zero sizes, scaled inputs and unrepresentable outputs.
+The 1e-12 absolute tolerances used in moderate-scale witness/transform assertions allow accumulated double rounding;
+scaled tests compare dimensionless ratios. They are test acceptance tolerances, not a public geometric error bound.
+
+PackagedArtifactIT verified main/sources/Javadoc entries for the three new types, Java 21 bytecode, Maven coordinates,
+absence of test classes and packaged SPI fixture loading. The full README example compiled and ran against the main
+JAR alone, reporting OBB interval [1.5,2.5] and contact depth 0.5. Javadoc doclint passed; the dependency tree contains
+only test-scoped JUnit and its transitive dependencies. No local Java 21 runtime, IntelliJ build or remote CI execution
+is claimed for this session.
+
+The first sandbox attempt could not execute the installed Maven launcher. After executing it with authorized tool
+access, offline Maven resolution failed because Failsafe's repository metadata was unavailable. The online run using
+the existing cache as a read-only file source and an isolated local repository passed. No dependency was added to the POM.
+Logs and API listings remain under ignored `.verification/geometry-*`; the full build log is `geometry-verify-first.log`.
+
+### Consumer compatibility fixtures
+
+Reused the previously recorded source/test fixtures in `.verification/consumers-extensions`, copied them to
+`.verification/consumers-geometry`, and changed only the copies' build/dependency versions. These fixtures correspond
+to the source commits recorded in the 1.1.0 evidence below; they are **not a fresh verification of current sibling
+checkouts**. No file outside Ashcore was changed or needed for these runs.
+
+| Recorded fixture source | Copied build version | Tests | Result |
+| --- | --- | --- | --- |
+| Ashgrid `04404cf` | `1.2.0-ashcore12check-SNAPSHOT` | 53 | clean verify passed |
+| Ashspace `3f1b910` | `1.0.0-ashcore12check-SNAPSHOT` | 31 | clean verify passed |
+| Ashtrace `5c516fc` | `1.0.0-ashcore12check-SNAPSHOT` | 43 | clean verify passed |
+| Ashnav `08e7d26` | `1.0.0-ashcore12check-SNAPSHOT` | 29 | clean verify passed |
+
+All **156 fixture tests** passed. Each dependency tree resolved `dev.nasaka.blackframe:ashcore:jar:1.2.0-SNAPSHOT:compile`.
+The main JAR and its copy installed in `.verification/extensions-repository` both had SHA-256
+`4aca690477eea1f3943e3c8b333da6882ff9f76fd2d99f2ceb2a6a0a9d9e1379`.
+This identifies the tested artifacts; archive timestamps may change on rebuild.
+The script is `.verification/verify-consumers-geometry.ps1`; logs are `<consumer>-geometry-verify.log`.
+It uses the exact JAR/POM via `maven-install-plugin:3.1.3:install-file`, then the same `clean verify` and dependency-tree
+command above with `-f` selecting each copied POM. Installation remains in the isolated repository and is not publication.
+Current consumer adoption, Java 21/25 remote CI and release destination/version checks remain separate follow-up work.
+
 ## 1.1.0-SNAPSHOT extensions — 2026-09-09
 
 This development version implements CORE-008 through CORE-010 under Blackframe contract revision 2.0.

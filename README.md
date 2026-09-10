@@ -10,7 +10,7 @@ and navigation and movement rules belong to higher layers or the caller.
 
 ## Requirements and quick start
 
-Requires **JDK 21+** and **Maven 3.9+** to build. This checkout is **1.1.0-SNAPSHOT**, a development version.
+Requires **JDK 21+** and **Maven 3.9+** to build. This checkout is **1.2.0-SNAPSHOT**, a development version.
 Publication of these coordinates is **not verified**. To use this checkout locally, run `mvn -B clean verify` and then `mvn -B install`.
 These commands do not upload artifacts. See [release and verification evidence](docs/RELEASE.md) before choosing a released dependency.
 
@@ -18,7 +18,7 @@ These commands do not upload artifacts. See [release and verification evidence](
 <dependency>
   <groupId>dev.nasaka.blackframe</groupId>
   <artifactId>ashcore</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
+  <version>1.2.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -27,10 +27,15 @@ A ray starting two units before the box hits at distance `2`. The terrain value 
 until the caller chooses a height scale and rounding rule.
 The sphere is hit one unit ahead; the segment reaches the box halfway through its length.
 The rotation turns the ray direction by 90 degrees around Y, and the bounded integer draw models a six-sided die.
+The oriented box retains its own rotation: the ray crosses it from distance `1.5` to `2.5`.
+Two unit spheres with centers `1.5` units apart have contact depth `0.5`; this describes geometry, without moving either sphere.
 
 ```java
 import nsk.nu.ashcore.api.collision.CollisionTests;
+import nsk.nu.ashcore.api.collision.Contact;
+import nsk.nu.ashcore.api.collision.IntersectionInterval;
 import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
+import nsk.nu.ashcore.api.geometry.OrientedBox;
 import nsk.nu.ashcore.api.geometry.Ray;
 import nsk.nu.ashcore.api.geometry.Segment3;
 import nsk.nu.ashcore.api.geometry.Sphere;
@@ -59,10 +64,17 @@ public final class AshcoreQuickStart {
         Vector3 turned = rotation.toMatrix3().mul(ray.direction());
         int roll = rng.nextInt(1, 7);
 
+        OrientedBox oriented = new OrientedBox(Vector3.ZERO, new Vector3(1, 0.25, 0.5), rotation);
+        IntersectionInterval interval = CollisionTests.rayVsOrientedBoxInterval(ray, oriented);
+        Contact contact = CollisionTests.sphereVsSphereContact(new Sphere(Vector3.ZERO, 1),
+                new Sphere(new Vector3(1.5, 0, 0), 1));
+
         RunningStats stats = new RunningStats();
         stats.add(height);
         System.out.printf("height=%.3f, rayHitT=%.3f, mean=%.3f%n", height, t, stats.mean());
         System.out.printf("sphereHitT=%.3f, segmentFraction=%.3f, roll=%d, turned=%s%n", sphereT, fraction, roll, turned);
+        if (interval.hit()) System.out.printf("boxEntry=%.3f, boxExit=%.3f%n", interval.tEnter(), interval.tExit());
+        if (contact.hit()) System.out.printf("contactDepth=%.3f, normal=%s%n", contact.depth(), contact.normal());
     }
 }
 ```
@@ -110,6 +122,39 @@ The tests describe primitive shapes, not mesh intersections or physical simulati
 New primitive queries add no contact epsilon. Relevant coordinate differences, capsule axis lengths/projections,
 slab ratios and hit times must be representable; unsupported non-finite inputs/differences are rejected where documented.
 Scaling prevents squared-coordinate overflow in sphere queries, but cannot preserve tiny features at arbitrary relative scales.
+
+### Oriented boxes and contact witnesses
+
+An **OBB** is a box whose sides follow its own rotated axes. An enclosing AABB can overlap another object even
+when the rotated box does not. `OrientedBox` stores a finite center, non-negative half extents and a finite non-zero
+quaternion, normalized at construction. It maps local box coordinates into the query coordinate system.
+Zero extents are valid; scale, shear and motion are absent. Positions and extents share units.
+
+`CollisionTests` supports ray/segment–OBB, sphere–OBB, AABB–OBB and OBB–OBB. These are static closed-shape queries.
+`rayVsOrientedBoxInterval` gives full entry/exit distances when the forward ray hits, including negative entry for
+an inside start; a box entirely behind the ray is a miss. `rayVsOrientedBoxT` gives the first forward distance,
+zero inside/on the box, or +infinity for absence. `segmentVsOrientedBoxInterval` clips both ends to dimensionless
+fractions in `[0,1]`; a stationary point inside/on the box gives `[0,1]`. Its `T` helper returns the entry or +infinity.
+An interval miss has `hit()==false` and endpoints `(+infinity,-infinity)`.
+
+`sphereVsSphereContact`, `sphereVsBoxContact` and `boxVsSphereContact` return a `Contact` with surface witnesses
+`pointA` and `pointB`, a unit `normal` and `depth` in position units. A miss has depth -infinity and null vectors;
+zero depth means touching, positive depth means penetration, including a point inside a solid.
+The witnesses obey `pointA-pointB = normal*depth` within rounding and need not coincide during penetration.
+For distinct sphere centers the normal points from A to B; coincident centers choose global +X.
+For a sphere center inside/on an AABB, the nearest face determines the normal, opposite that face's outward direction;
+ties use X-min, X-max, Y-min, Y-max, Z-min, Z-max, and depth is radius plus face clearance.
+Reversing box/sphere arguments swaps witnesses and negates the normal, including ties.
+These results supply geometric information, without a solver, contact manifold or OBB contact API.
+
+The new queries add no contact epsilon. Rounded rotations and projections can misclassify tangency or very small
+gaps at large relative scales; no exact-predicate or general error bound is promised. Finite representable center
+differences, local rotations and all nonparallel slab ratios are required. AABB/OBB conversion requires representable
+widths; contact results require representable depth and witness coordinates. Unsupported overflow/non-finite arithmetic
+throws `IllegalArgumentException`. A boolean query can accept extreme shapes whose contact witnesses cannot be represented.
+See [geometry contracts and rotation assessment](docs/GEOMETRY.md) for tie rules, compatibility and numerical limits.
+Continuous rotation queries remain deferred after CORE-013's assessment; endpoint tests and fixed sampling do not
+establish separation throughout a rotation. `SweptAABB` still models translation only.
 
 Double arithmetic can overflow or lose precision in intermediate differences, dot products, squared lengths and repeated transforms.
 Robust normalization does not make all other vector operations robust over the entire double range.
@@ -187,6 +232,7 @@ Memory below is additional state or working storage, excluding inputs and callba
 | Fixed-size vector/matrix/quaternion math | O(1) | O(1); immutable results/arrays may allocate. |
 | Ray/box and box sweep | O(1) | O(1); result records and vectors may allocate. |
 | Ray/sphere, sphere overlap, segment/box, capsule queries | O(1) | O(1); temporary vectors/shapes may allocate. |
+| OBB queries and sphere contact witnesses | O(1) | O(1); box pairs check at most 15 axes; fixed-size arrays, vectors and records may allocate. |
 | Quaternion inverse and matrix conversions | O(1) | O(1); fixed-size results may allocate. |
 | Bounded integer RNG | Expected O(1) | O(1); rejection has no finite worst-case draw count. |
 | `HaltonSequence.next` | O(1) amortized over consecutive calls; O(log_b(i+1)) worst case | O(log_b(i+1)) retained digits. Reset releases logical state; list capacity can remain. |
@@ -211,6 +257,8 @@ Releases follow Semantic Versioning. Source and binary signatures are retained b
 The 1.1.0 extension adds methods to existing classes and default methods to the RNG interface, requiring no new methods
 in existing RNG implementations. It also fixes Vector2/4 normalization, capsule distances/intersections and zero-weight selection.
 Sphere/Capsule constructors now reject invalid shape data; the previously constructible invalid values have no geometric interpretation.
+The 1.2.0 extension adds `OrientedBox`, `IntersectionInterval`, `Contact` and opt-in query methods. Existing signatures,
+boolean queries, `Hit` and `SweptAABB.Result` retain their contracts. No existing caller needs to migrate to these additions.
 Corrections change extreme normalization, shallow-angle box hits, sweep arithmetic, P² estimates and weighted tables, and reject specified invalid inputs.
 Clients must not rely on old erroneous results. The explicitly stable SplitMix64/hash/seed contracts require a major version or a separately named
 algorithm to change. Other floating-point and approximate results can change with documented fixes; pin the artifact version for stored procedural output.
@@ -219,6 +267,8 @@ See [migration and consumer checks](docs/RELEASE.md) and the [maintenance eviden
 ## Terms
 
 - **AABB:** a box whose sides follow the coordinate axes; a cheap hit volume.
+- **OBB:** a box with its own orientation; half extents measure center-to-face distances along its local axes.
+- **Contact witness:** a selected point on each shape's surface, with a normal and geometric penetration depth.
 - **Unit vector:** a direction with length one, allowing ray t to measure distance.
 - **Quaternion:** four numbers used to compose rotations without storing angles around each axis.
 - **Affine transform:** a matrix combining a linear transform with translation.
