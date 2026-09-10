@@ -49,6 +49,9 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 | [CORE-008](#core-008) | P1 | INSPEKCJA / DECYZJA | Uzupełnić przecięcia prymitywów i poprawić kapsułę |
 | [CORE-009](#core-009) | P1 | INSPEKCJA / DECYZJA | Ujednolicić wektory i uzupełnić operacje kwaternionów |
 | [CORE-010](#core-010) | P1 | INSPEKCJA / DECYZJA | Dodać losowanie całkowite w zakresie i poprawić zerowe wagi |
+| [CORE-011](#core-011) | P2 | DECYZJA | Określić prymityw OBB i testy jego przecięć |
+| [CORE-012](#core-012) | P2 | DECYZJA | Zdefiniować geometryczny wynik kontaktu prymitywów |
+| [CORE-013](#core-013) | P2 | DECYZJA | Ocenić zapytania prymitywów podczas zadanego obrotu |
 
 <a id="core-001"></a>
 
@@ -314,6 +317,92 @@ Stan może zużyć więcej niż jedno losowanie. Dotychczasowe bezargumentowe st
 
 **Powiązania:** istniejące interfejsy RNG konsumentów muszą kompilować się bez nowych implementacji metod.
 
+## Uwagi o zakresie kolizji — 2026-09-10
+
+Poniższe pozycje są propozycjami rozwoju w granicach rewizji 2.0, nie odtworzonymi błędami ani warunkami wydania obecnego API. Użytkownik zlecił uzupełnienie backlogu; nie implementację nowych funkcji. Punkt odniesienia: lokalne źródła odczytane 2026-09-10. Zgodnie z bieżącą instrukcją nie wykonywano operacji Git ani nowego checkpointu.
+
+Ashcore może obliczać przecięcia i parametry geometryczne dla podanych kształtów oraz jawnego modelu ruchu. Siły, masa, impulsy, tarcie, wyporność, zmiana stanu sceny w reakcji na kontakt, podparcie postaci i adapter Minecraft pozostają poza zakresem. Nowe typy nie mogą zależeć od Ashspace ani Ashtrace. Odrzucenie propozycji wymaga zapisanej decyzji i statusu NIE DOTYCZY; samo dopisanie planu nie oznacza GOTOWE.
+
+<a id="core-011"></a>
+
+## CORE-011 — Określić prymityw OBB i testy jego przecięć
+
+**Status:** OTWARTE  
+**Priorytet:** P2  
+**Dowód:** DECYZJA, oparta na inspekcji API; bez reprodukcji błędu  
+**Kontrakt:** sekcje 3.1, 4.1–4.5, 5, 7
+
+**Gdzie:** [geometria](src/main/java/nsk/nu/ashcore/api/geometry), [CollisionTests.java](src/main/java/nsk/nu/ashcore/api/collision/CollisionTests.java), [Quaternion.java](src/main/java/nsk/nu/ashcore/api/math/Quaternion.java), testy przecięć i [README.md](README.md).
+
+**Stan i znaczenie:** Ashcore ma AABB, sferę, kapsułę i wybrane testy przecięć, lecz nie ma publicznego OBB, czyli prostopadłościanu z własną orientacją. Osiowa obwiednia obróconej bryły obejmuje dodatkową przestrzeń. Przecięcie obwiedni nie dowodzi przecięcia samej bryły; obecne AABB działa zgodnie ze swoim kontraktem.
+
+**Praca do wykonania:** Ustalić małą, niezmienną reprezentację OBB z użyciem typów Ashcore, np. środek, półrozmiary i właściwy obrót. Wybrać i uzasadnić wspierane pary: promień/odcinek–OBB, sfera–OBB, AABB–OBB i OBB–OBB. Zakres dotyczy kształtów nieruchomych w chwili zapytania. Zdefiniować styczność, zerowe rozmiary, orientację, skończoność danych, tolerancje oraz granice dokładności.
+
+Dla promienia rozdzielić pierwsze trafienie od pełnego przedziału wejścia/wyjścia. Jeżeli wynik ma zasilać Ashtrace, ustalić odpowiedni kontrakt u właściciela geometrii, bez zależności od RayIntersection3 z wyższej warstwy. Start wewnątrz nie może usuwać potrzebnej informacji o wejściu przed początkiem promienia. Dotychczasowe metody zwracające t=0 zachowują znaczenie.
+
+**Warunki zamknięcia:**
+
+- [ ] Zapisano reprezentację, wspierane pary i przypadki odrzucone. Brak wsparcia nie jest zwracany jako pewny brak przecięcia.
+- [ ] Wybrane operacje mają testy styczności, rozdzielenia, zawierania, degeneracji i niemal równoległych osi, w tym rozłączne OBB o przecinających się obwiedniach AABB.
+- [ ] Sprawdzono znane wyniki, zgodność z istniejącymi prymitywami przy zerowym obrocie oraz wspólne sztywne przekształcenie w uzasadnionej tolerancji. Wzorce nie kopiują badanego algorytmu.
+- [ ] Przyjęte zapytania promieniowe/odcinkowe mają jawne jednostki i testy pełnych przedziałów, startu wewnątrz, styczności oraz odcinka zerowego.
+- [ ] Oceniono zgodność API, koszty i ograniczenia numeryczne; zaimplementowany zakres przechodzi testy i clean verify bez nowych zależności produkcyjnych.
+
+**Powiązania:** Uzupełnia zamknięte [CORE-008](#core-008). Konwersje należą do [SPACE-012](../Ashspace/ISSUES.md#space-012), użycie indeksów do [TRACE-012](../Ashtrace/ISSUES.md#trace-012). Grafy ramek i fizyka nie należą do tego zadania.
+
+<a id="core-012"></a>
+
+## CORE-012 — Zdefiniować geometryczny wynik kontaktu prymitywów
+
+**Status:** OTWARTE  
+**Priorytet:** P2  
+**Dowód:** DECYZJA, oparta na inspekcji znaczenia istniejących wyników  
+**Kontrakt:** sekcje 3.1, 4.1–4.5, 5, 7
+
+**Gdzie:** [CollisionTests.java](src/main/java/nsk/nu/ashcore/api/collision/CollisionTests.java), [Hit.java](src/main/java/nsk/nu/ashcore/api/collision/Hit.java), [SweptAABB.java](src/main/java/nsk/nu/ashcore/api/collision/SweptAABB.java), testy przecięć i [README.md](README.md).
+
+**Stan i znaczenie:** sphereVsSphere i sphereVsBox zwracają boolean. Hit opisuje trafienie promieniem, a SweptAABB.Result wynik określonego modelu translacji. Nie są ogólnym wynikiem kontaktu dwóch przenikających się brył; istniejącym normalnym nie należy po cichu przypisywać innego znaczenia.
+
+**Praca do wykonania:** Określić potrzebę i minimalny wynik geometryczny dla wybranych par, zaczynając od sfera–sfera i sfera–AABB. Rozdzielić brak kontaktu, styczność i przenikanie. Zdefiniować kierunek normalnej względem argumentów, punkty na powierzchniach i znaczenie głębokości, jeśli jest zwracana. Dla wspólnych środków, pełnego zawierania i remisów jawnie oznaczać niejednoznaczność albo dokumentować deterministyczny wybór. Nie obiecywać jednego unikalnego punktu dla kontaktu całej krawędzi/powierzchni.
+
+Wynik opisuje geometrię, nie polecenie przesunięcia ciała. Zakres nie obejmuje solvera impulsów, tarcia, mas, podparcia ani utrzymywania kontaktów między klatkami. Pary OBB są opcjonalnym następnym zakresem po CORE-011.
+
+**Warunki zamknięcia:**
+
+- [ ] Każde pole ma określone jednostki, układ, dostępność i znaczenie. Głębokość nie jest mylona z odległością promienia ani czasem sweep.
+- [ ] Testy obejmują styczność, rozdzielenie, częściowe/pełne zawieranie, wspólne środki i degeneracje; punkty leżą na zadeklarowanych powierzchniach w uzasadnionej tolerancji.
+- [ ] Zamiana argumentów i wspólne sztywne przekształcenie zachowują zadeklarowane relacje; wyjątki dla niejednoznacznych przypadków mają jawne reguły.
+- [ ] Istniejące metody boolowskie, Hit i SweptAABB.Result zachowują kontrakty. Opisano wspierane pary, koszt i migrację; implementacja przechodzi testy oraz clean verify.
+
+**Powiązania:** [CORE-004](#core-004), [CORE-008](#core-008), opcjonalnie [CORE-011](#core-011). Nie zleca zmian w Ashnav ani adapterach silników.
+
+<a id="core-013"></a>
+
+## CORE-013 — Ocenić zapytania prymitywów podczas zadanego obrotu
+
+**Status:** OTWARTE  
+**Priorytet:** P2  
+**Dowód:** DECYZJA; ograniczenie obecnego sweep jest jawnie udokumentowane  
+**Kontrakt:** sekcje 1, 3.1, 4.2–4.5, 7, 8
+
+**Gdzie:** [SweptAABB.java](src/main/java/nsk/nu/ashcore/api/collision/SweptAABB.java), [Quaternion.java](src/main/java/nsk/nu/ashcore/api/math/Quaternion.java), [README.md](README.md), przyszłe testy/prototypy geometryczne.
+
+**Stan i znaczenie:** SweptAABB bada translację AABB względem nieruchomego AABB, bez obrotu i przyspieszenia. Rozłączność na początku i końcu kroku nie dowodzi braku kontaktu pomiędzy nimi. To ograniczenie zakresu, nie reprodukcja błędu tego algorytmu.
+
+**Praca do wykonania:** Ocenić potrzebę i wykonalność ograniczonego zapytania geometrycznego, bez zobowiązania do budowy pełnego systemu ciągłych kolizji. Wybrać konkretną parę prymitywów i jawny model toru, np. zadany obrót wokół stałej osi/punktu oraz translację w skończonym przedziale czasu. Dwa końcowe kwaterniony nie określają liczby obrotów ani całej drogi. Dowolny callback ruchu bez ograniczeń nie wystarcza do gwarancji wykrycia kontaktu.
+
+Porównać wynik dla zadeklarowanego modelu w granicach arytmetyki, konserwatywny przedział możliwego kontaktu i próbkowanie bez pełnej gwarancji. Stała liczba podkroków oraz obwiednia obejmująca tylko początkowe i końcowe ustawienie nie gwarantują pokrycia łuku. Wyczerpanie budżetu nie może udawać pewnego braku kontaktu.
+
+**Warunki zamknięcia decyzji:**
+
+- [ ] Zapisano parę prymitywów, model ruchu, jednostki, punkt i oś obrotu, obsługę pełnych i wielokrotnych obrotów oraz ograniczenia numeryczne.
+- [ ] Przeanalizowano kontakt tylko pomiędzy końcami kroku, pełny obrót z identyczną orientacją końcową, styczność i zerowy ruch. Gęste próbkowanie nie jest jedynym dowodem gwarancji ciągłości.
+- [ ] Zapisano znaczenie wyniku, brakujące dowody, koszty i plan niezależnej weryfikacji, bez niezmierzonych obietnic czasu wykonania.
+- [ ] Wybrano osobne, ograniczone zadanie implementacyjne z kryteriami odbioru albo odroczenie z uzasadnieniem. GOTOWE dla tej oceny oznacza zakończenie decyzji, nie dostępność nowego API.
+- [ ] Nie zmieniono kontraktu SweptAABB, nie dodano integracji sił, reakcji na kontakt, stanu świata ani zależności od Ashspace. Ewentualna zmiana wspólnej architektury wymaga osobnego rozstrzygnięcia według sekcji 8.
+
+**Powiązania:** [CORE-011](#core-011), [TRACE-012](../Ashtrace/ISSUES.md#trace-012). Ocena nie blokuje statycznych testów ani obecnego wydania.
+
 ## Stan przekazania i dziennik sesji
 
 **Stan historyczny przed korektą, 2026-09-09:** wszystkie zadania pozostawały OTWARTE. Utworzono dokumentację; nie wprowadzono korekt kodu, nie wykonano buildów bibliotek ani publikacji. Nie uznawaj samego dodania ISSUES.md za realizację żadnego zadania.
@@ -331,3 +420,11 @@ Po kolejnej sesji dopisz wiersz i uzupełnij statusy odpowiednich zadań. Zapisz
 | 2026-09-09 / punkt odniesienia powyżej | Wszystkie: OTWARTE | Utworzenie planu korekt | Inspekcja statyczna; testów bibliotek nie uruchomiono | Rozpocząć od wskazanego P1 |
 | 2026-09-09 / 7ffe561; snapshot 7649935 | CORE-001–CORE-007: GOTOWE | Korekty normalizacji, geometrii, P², wag, walidacji, dokumentacji, CI i pakowania; zachowana zgodność AABB po teście Ashgrid | Bazowe 88 testów PASS; pierwsze 13 regresji: 10 FAIL; końcowe clean verify: 113 + 3 PASS. Cztery izolowane buildy konsumentów: 156 testów PASS. IntelliJ build PASS. JDK/Maven, wersje artefaktów, SHA i polecenia: docs/RELEASE.md | Publikacja i zdalne CI niewykonane; nie nadpisano wydanych artefaktów. Przekazać ustalenia dolnej warstwy do backlogów konsumentów |
 | 2026-09-09 / commit dodający ten wpis; snapshot 2f5fbe5 | CORE-008–CORE-010: GOTOWE | Przecięcia prymitywów, kapsuła, spójność wektorów, konwersje/odwrotność kwaternionu, RNG zakresowe i zerowe wagi; minor 1.1.0-SNAPSHOT | Pierwsze 6 regresji: 6 FAIL; końcowe clean verify: 144 + 3 PASS. IntelliJ build PASS. Cztery izolowane buildy: 156 testów PASS. javap: 26 metod dodanych, zero sygnatur usuniętych. JDK 25.0.2, Maven 3.9.16, release 21; szczegóły i SHA w docs/RELEASE.md | Publikacja i zdalne CI niewykonane; lokalnie nie testowano runtime Java 21. Źródła/POM konsumentów pozostawiono bez zmian |
+
+### Przegląd zakresu kolizji 2026-09-10
+
+**Stan bieżącego przeglądu:** CORE-001–CORE-010 zachowują dotychczasowe statusy. CORE-011–CORE-013 są otwartymi propozycjami P2; nie stanowią dowodu błędu ani warunku wydania obecnego zakresu. Historyczne zalecenia dla konsumentów należy zestawić z ich bieżącymi ISSUES.md.
+
+| Data / commit | ID i decyzja | Zmiana | Polecenie / test i rzeczywisty wynik | Pozostałe zależności / następny krok |
+| --- | --- | --- | --- | --- |
+| 2026-09-10 / bez operacji Git, zgodnie z instrukcją użytkownika | CORE-011–CORE-013: OTWARTE, P2 / DECYZJA | Geometria OBB, wyniki kontaktu i ocena zapytań obrotowych; wyłącznie backlog | Inspekcja źródeł; kontrola struktury, odnośników i zachowania wcześniejszej treści. Testów bibliotek i buildów nie uruchamiano | Najpierw rozstrzygnąć CORE-011 i CORE-012; CORE-013 pozostaje oceną, bez zobowiązania do implementacji. |
