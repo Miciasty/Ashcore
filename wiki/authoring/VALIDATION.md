@@ -34,3 +34,12 @@ Publikacja wymaga osobnego uruchomienia po zaakceptowaniu lokalnego podglądu.
 - PASS: przykład `JavaPalette.java` ze wspólnego szablonu skompilowano z `--release 11` i uruchomiono na JDK 21; wynik to `SPAWN, CAMP / 2.5`.
 - PASS: nowa zakładka szablonu i kolorowany blok Ashcore nie powodują poziomego przepełnienia przy szerokości 390 px. Konsola przeglądarki nie zgłasza błędów.
 - PASS: budowanie Ashcore i szablonu oraz kontrola odnośników. Szablon zawiera teraz 10 stron i 34 sekcje, w tym `java-palette`.
+
+## Pozostałe palety kodu — aktualizacja
+
+- PASS: 37 bloków Ashcore i 25 bloków szablonu zachowuje źródło po kolorowaniu, włącznie z wcięciami, znakami Unicode i escapowanym HTML. Zwykły tekst nie dostaje tokenów.
+- PASS: XML/HTML, Kotlin/Groovy, Bash, PowerShell, YAML/JSON i komendy Minecraft korzystają z jawnie wybranych lokalnych gramatyk. Sprawdzono aliasy, parametry `-cp` i `-NoEnumerate`, operatory PowerShell, `$null`, zmienne środowiskowe oraz polecenia Maven/Java.
+- PASS: wszystkie cztery nowe strony palet wyświetlają kolory w obu motywach; przy 390 px próbki układają się w jednej kolumnie bez poziomego przepełnienia dokumentu.
+- PASS: rzeczywiste skopiowanie i wklejenie bloków XML, Bash i PowerShell zachowuje źródło; jednowierszowe pole kontrolne usuwa jedynie znaki końca linii. Konsola podglądu nie zgłasza błędów.
+- PASS: budowanie i kontrole obu WIKI. Ashcore: 15 stron, 89 sekcji, 122 odnośniki. Szablon: 14 stron, 47 sekcji, 15 odnośników, w tym nowe strony `xml-palette`, `gradle-palette`, `terminal-palette` i `config-palette`.
+- Paleta Java i źródło 26 przykładów Java pozostają bez zmian. Nie wykonano pusha ani publikacji.
