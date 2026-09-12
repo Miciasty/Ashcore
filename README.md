@@ -10,7 +10,7 @@ and navigation and movement rules belong to higher layers or the caller.
 
 ## Requirements and quick start
 
-Requires **JDK 21+** and **Maven 3.9+** to build. This checkout is **1.2.0-SNAPSHOT**, a development version.
+Requires **JDK 21+** and **Maven 3.9+** to build. This checkout uses release version **1.2.0**.
 Publication of these coordinates is **not verified**. To use this checkout locally, run `mvn -B clean verify` and then `mvn -B install`.
 These commands do not upload artifacts. See [release and verification evidence](docs/RELEASE.md) before choosing a released dependency.
 
@@ -18,7 +18,7 @@ These commands do not upload artifacts. See [release and verification evidence](
 <dependency>
   <groupId>dev.nasaka.blackframe</groupId>
   <artifactId>ashcore</artifactId>
-  <version>1.2.0-SNAPSHOT</version>
+  <version>1.2.0</version>
 </dependency>
 ```
 

@@ -2,7 +2,7 @@
 
 Decision date: 2026-09-10. Blackframe contract revision 2.0; source snapshot `c577243`.
 These additions belong to Ashcore and use only its values and the Java standard library.
-The development version is 1.2.0-SNAPSHOT. Existing public signatures and query behavior are retained.
+The release version is 1.2.0. Existing public signatures and query behavior are retained.
 
 ## Oriented boxes
 
@@ -73,7 +73,7 @@ methods; no consumer migration is required for existing usage. Adoption belongs 
 # Rotation assessment — CORE-013
 
 Decision: defer a public continuous-rotation API. This closes the requested assessment, not implementation.
-There is no continuous-rotation query in 1.2.0-SNAPSHOT. Static OBB queries and `SweptAABB` remain independent.
+There is no continuous-rotation query in 1.2.0. Static OBB queries and `SweptAABB` remain independent.
 
 The bounded candidate is one moving OBB against one stationary sphere. With time t in [0,T], a fixed unit
 axis u, pivot p, initial center c0/orientation q0, constant translation velocity v and signed angular speed

@@ -1,4 +1,13 @@
-# Development verification and release procedure
+# Release verification and procedure
+
+## 1.2.0 release coordinates — 2026-09-10
+
+The current POM and dependency examples use **1.2.0**, without SNAPSHOT. The complete current
+Blackframe source set passed 545 tests on Java 21, including **165 Ashcore tests and 3 artifact tests**.
+Versions, exact release JAR hashes and reproduction are recorded in the
+[shared release verification](../../Ashnav/VERIFICATION.md#release-version-alignment).
+No Git operations, tag or publication were performed. Earlier sections below describe historical
+snapshot builds; their filenames and hashes are preserved as evidence.
 
 ## 1.2.0-SNAPSHOT geometry — 2026-09-10
 
