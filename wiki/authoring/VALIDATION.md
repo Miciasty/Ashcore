@@ -43,3 +43,9 @@ Publikacja wymaga osobnego uruchomienia po zaakceptowaniu lokalnego podglądu.
 - PASS: rzeczywiste skopiowanie i wklejenie bloków XML, Bash i PowerShell zachowuje źródło; jednowierszowe pole kontrolne usuwa jedynie znaki końca linii. Konsola podglądu nie zgłasza błędów.
 - PASS: budowanie i kontrole obu WIKI. Ashcore: 15 stron, 89 sekcji, 122 odnośniki. Szablon: 14 stron, 47 sekcji, 15 odnośników, w tym nowe strony `xml-palette`, `gradle-palette`, `terminal-palette` i `config-palette`.
 - Paleta Java i źródło 26 przykładów Java pozostają bez zmian. Nie wykonano pusha ani publikacji.
+
+## Paleta wyników — aktualizacja
+
+- PASS: blok `Expected output` używa formatu `output`: nazwy pól są turkusowe, liczby bursztynowe, wartości logiczne fioletowe; separatory pozostają neutralne.
+- PASS: sprawdzono kolory w jasnym i ciemnym motywie oraz rzeczywiste kopiowanie wyniku. Tekst dwóch wierszy i wszystkie wartości pozostają bez zmian.
+- PASS: kontrola zachowania źródła w 37 blokach Ashcore i budowanie WIKI. Szablon zawiera również osobną stronę `output-palette` z przykładami i wartościami kolorów.

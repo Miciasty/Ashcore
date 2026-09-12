@@ -6,9 +6,9 @@ code copying, section links, and interactive figures. It runs entirely from loca
 
 Code examples use bundled PrismJS 1.30.0 with a shared palette for dark and light
 themes. Supported labels include `java`, `xml`, `html`, `kotlin` (Gradle Kotlin DSL),
-`groovy` (Gradle Groovy DSL), `bash`, `powershell`, `yaml`, `json`, and `minecraft`.
+`groovy` (Gradle Groovy DSL), `bash`, `powershell`, `yaml`, `json`, `minecraft`, and `output`.
 Set `data-language` to the source language; `data-filename` is only a toolbar label.
-Use `text` for expected output and directory listings. The copy button retains the
+Use `output` for structured results and `text` for prose and directory listings. The copy button retains the
 original source, including indentation, line breaks, and escaped HTML characters.
 Edit `src/syntax-java.css` for shared colors and `src/syntax-code.css` for non-Java
 token roles. `assets/syntax.js` maps aliases and adds command tokens. Prism's source

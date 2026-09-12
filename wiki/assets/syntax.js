@@ -11,7 +11,8 @@
     bash: 'bash', sh: 'bash', shell: 'bash', zsh: 'bash',
     powershell: 'powershell', ps: 'powershell', ps1: 'powershell',
     yaml: 'yaml', yml: 'yaml', json: 'json',
-    minecraft: 'minecraft', mcfunction: 'minecraft'
+    minecraft: 'minecraft', mcfunction: 'minecraft',
+    output: 'output', stdout: 'output'
   };
 
   // Prism recognizes shell builtins. Add the build tools used in these docs
@@ -59,6 +60,23 @@
     number: /[~^](?:-?\d+(?:\.\d+)?)?|\b-?\d+(?:\.\d+)?\b/,
     operator: /[=!]/,
     punctuation: /[\[\]{},:]/
+  };
+
+  // Structured results have values and field names, without shell commands.
+  prism.languages.output = {
+    string: { pattern: /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/, greedy: true },
+    property: {
+      pattern: /(^|[\s,{])[a-z_][\w.-]*(?=\s*(?:=|:(?=\s|$)))/i,
+      lookbehind: true
+    },
+    boolean: /\b(?:true|false)\b/,
+    null: /\bnull\b/,
+    number: {
+      pattern: /(^|[^\w.])[+-]?(?:NaN|Infinity|(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)(?![\w.])/i,
+      lookbehind: true
+    },
+    operator: /[=:]/,
+    punctuation: /[{}\[\](),]/
   };
 
   const resolve = language => {

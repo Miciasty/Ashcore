@@ -44,6 +44,10 @@
     color: var(--syntax-operator);
   }
 
+  .syntax-code.language-output .token.property {
+    color: var(--syntax-type);
+  }
+
   .syntax-code:not(.language-java) .token.punctuation {
     color: var(--syntax-punctuation);
   }
