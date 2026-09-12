@@ -3,6 +3,8 @@
 Ashcore provides Java math, primitive geometry, sampling, noise, hashing and streaming statistics for engines and plugins.
 It is the lowest Blackframe layer and has no production dependencies outside the Java standard library.
 
+Version **1.2.0** is available from [Maven Central](https://central.sonatype.com/artifact/dev.nasaka.blackframe/ashcore/1.2.0).
+
 Use it to generate terrain samples, test a player's ray against a box, or track an average without retaining every measurement.
 A box hit measures contact with that box. If the box encloses a more detailed object, the result is only a candidate for that object's hit.
 Ashcore does not compute forces, bouncing or collision response. Voxel storage belongs to Ashgrid, coordinate-frame graphs to Ashspace,
@@ -10,9 +12,7 @@ and navigation and movement rules belong to higher layers or the caller.
 
 ## Requirements and quick start
 
-Requires **JDK 21+** and **Maven 3.9+** to build. This checkout uses release version **1.2.0**.
-Publication of these coordinates is **not verified**. To use this checkout locally, run `mvn -B clean verify` and then `mvn -B install`.
-These commands do not upload artifacts. See [release and verification evidence](docs/RELEASE.md) before choosing a released dependency.
+Use JDK 21 or newer. Add this dependency to your Maven project:
 
 ```xml
 <dependency>
@@ -22,7 +22,12 @@ These commands do not upload artifacts. See [release and verification evidence](
 </dependency>
 ```
 
-Java packages remain `nsk.nu.ashcore.*`. The example below is compiled and run against the main JAR during `verify`.
+Maven downloads Ashcore from Maven Central. No additional repository configuration or local dependency
+installation is required. Ashcore has no external production dependencies.
+
+To build Ashcore from source, use Maven 3.9+ and run `mvn -B clean verify` in this checkout.
+
+Java packages use `nsk.nu.ashcore.*`. Save the following as `AshcoreQuickStart.java` in a consumer project using that dependency.
 A ray starting two units before the box hits at distance `2`. The terrain value sums five noise layers and is not a block height
 until the caller chooses a height scale and rounding rule.
 The sphere is hit one unit ahead; the segment reaches the box halfway through its length.
@@ -152,8 +157,8 @@ gaps at large relative scales; no exact-predicate or general error bound is prom
 differences, local rotations and all nonparallel slab ratios are required. AABB/OBB conversion requires representable
 widths; contact results require representable depth and witness coordinates. Unsupported overflow/non-finite arithmetic
 throws `IllegalArgumentException`. A boolean query can accept extreme shapes whose contact witnesses cannot be represented.
-See [geometry contracts and rotation assessment](docs/GEOMETRY.md) for tie rules, compatibility and numerical limits.
-Continuous rotation queries remain deferred after CORE-013's assessment; endpoint tests and fixed sampling do not
+See [geometry contracts](docs/GEOMETRY.md) for tie rules, compatibility and numerical limits.
+Continuous rotation queries are not supported; endpoint tests and fixed sampling do not
 establish separation throughout a rotation. `SweptAABB` still models translation only.
 
 Double arithmetic can overflow or lose precision in intermediate differences, dot products, squared lengths and repeated transforms.
@@ -262,9 +267,9 @@ boolean queries, `Hit` and `SweptAABB.Result` retain their contracts. No existin
 Corrections change extreme normalization, shallow-angle box hits, sweep arithmetic, P² estimates and weighted tables, and reject specified invalid inputs.
 Clients must not rely on old erroneous results. The explicitly stable SplitMix64/hash/seed contracts require a major version or a separately named
 algorithm to change. Other floating-point and approximate results can change with documented fixes; pin the artifact version for stored procedural output.
-See [migration and consumer checks](docs/RELEASE.md) and the [maintenance evidence](ISSUES.md).
+See the [migration guide](docs/MIGRATION.md) for changes that can affect existing callers.
 
-## Terms
+## Glossary
 
 - **AABB:** a box whose sides follow the coordinate axes; a cheap hit volume.
 - **OBB:** a box with its own orientation; half extents measure center-to-face distances along its local axes.
@@ -281,4 +286,4 @@ See [migration and consumer checks](docs/RELEASE.md) and the [maintenance eviden
 
 ## License
 
-Apache-2.0 Copyright 2025 Mateusz Aftanas
+Apache License 2.0. See [LICENSE](LICENSE).

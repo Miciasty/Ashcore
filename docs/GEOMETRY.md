@@ -1,8 +1,7 @@
-# Static geometry decisions — CORE-011 and CORE-012
+# Geometry contracts
 
-Decision date: 2026-09-10. Blackframe contract revision 2.0; source snapshot `c577243`.
-These additions belong to Ashcore and use only its values and the Java standard library.
-The release version is 1.2.0. Existing public signatures and query behavior are retained.
+This guide describes oriented boxes and contact results in Ashcore 1.2.0.
+See the [README](../README.md) for installation and examples.
 
 ## Oriented boxes
 
@@ -68,47 +67,16 @@ dimensionless and does not inflate shapes. Finite representable differences, dep
 are required; overflow throws IllegalArgumentException. Extreme inputs accepted by a boolean overlap query
 can therefore be outside the contact-result range. Cost is O(1) time and memory, with immutable allocations.
 `Hit`, boolean operations and `SweptAABB.Result` retain their previous meanings. Callers opt into the new
-methods; no consumer migration is required for existing usage. Adoption belongs to the consumer repository.
+methods; no consumer migration is required for existing usage.
 
-# Rotation assessment — CORE-013
+## Rotation and motion limits
 
-Decision: defer a public continuous-rotation API. This closes the requested assessment, not implementation.
-There is no continuous-rotation query in 1.2.0. Static OBB queries and `SweptAABB` remain independent.
+Ashcore 1.2.0 has no continuous-rotation query. Static OBB queries describe one pose,
+while `SweptAABB` handles translation without rotation. Testing the start and end poses
+cannot establish separation throughout a rotation.
 
-The bounded candidate is one moving OBB against one stationary sphere. With time t in [0,T], a fixed unit
-axis u, pivot p, initial center c0/orientation q0, constant translation velocity v and signed angular speed
-omega, define c(t) = p + v*t + R(u,omega*t)*(c0-p) and q(t) = q(u,omega*t)*q0. The pivot's translation is
-p+v*t; the axis direction stays fixed in the query coordinates. Time units are caller-selected, v uses
-position/time and omega radians/time. Retain signed omega*T, including full or multiple turns; two endpoint
-quaternions cannot replace it. Inputs, T >= 0 and all intermediate positions/angles must remain finite.
-Argument reduction at huge angles and accumulated rounding need explicit supported limits before release.
-
-An analytic counterexample needs no sampling assumption: a thin box with half extents (2,0.1,0.1), centered
-at zero, rotates around Z from angle 0 to pi. A sphere of radius 0.1 at (0,1.5,0) misses both endpoints but
-intersects at pi/2. At 2*pi, the end orientation is again the start despite the same intermediate contact;
-at 4*pi it repeats. A zero-radius point at (0,sqrt(4.01),0) touches the swept corner at the angle rotating
-(2,0.1,0) onto +Y. Such isolated tangency can escape a fixed sample schedule. Zero angular/linear motion
-reduces to one static query; a stationary tangent is contact throughout the interval.
-
-Three possible result contracts were compared:
-
-| Approach | Result and evidence needed | Cost |
-| --- | --- | --- |
-| Certified root isolation for point-to-box distance minus sphere radius | First contact time bracket, with proof of no earlier root, including tangencies and changing closest features. No implementation or numerical proof yet. | Data-dependent; no latency bound established. |
-| Conservative subdivision | Intervals in which contact remains possible, allowing false positives. A negative result needs certified distance lower bounds and outward rounding. Exhausted budget must return unresolved intervals. | O(N) static/bound evaluations for N visited intervals; depth-first working memory O(D) plus output K, where D is subdivision depth. |
-| Fixed sampling | Observed static hits only. No observed hit cannot establish continuous separation. | O(S) static tests for S samples; O(1) working memory excluding output. |
-
-A possible subdivision bound follows from motion: each material point has speed at most
-L = |v| + |omega|*(|c0-p| + |halfExtents|). Over a time offset h, displacement is at most L*h by integrating
-this speed bound. Distance from a fixed sphere center to the moving solid is therefore Lipschitz with the
-same bound. A certified positive distance margin greater than L*h can exclude a whole interval around a
-sample; this argument covers the arc, unlike the union of endpoint AABBs. However, the current double
-distance computation supplies no outward-rounded error bound. It cannot by itself certify that margin.
-L, its products and computed bounds also need overflow handling; a loose bound must not become a false miss.
-
-Deferral is justified by the missing certified static-distance error bound, tangent/root handling and a
-concrete consumer accuracy/budget requirement. Independent verification for a future proposal must include
-analytic circle/corner cases above, interval-arithmetic or high-precision references, full/multiple turns,
-zero motion, extreme scales and deliberate budget exhaustion. Dense samples may supplement these checks
-but cannot be the only proof. Performance measurement must name N/S, tolerance, geometry and environment.
-No forces, physical response, world state or upper-layer dependencies are required or introduced.
+For example, a thin box with half extents `(2, 0.1, 0.1)`, centered at zero, rotates around Z
+from 0 to pi. A sphere of radius `0.1` at `(0, 1.5, 0)` misses both endpoints but intersects
+at pi/2. A full turn returns to the starting orientation while passing through the same contact.
+Fixed sampling can also miss brief contact or an isolated tangency. Treat sampled hits as
+observations, not proof that the full motion is collision-free.
