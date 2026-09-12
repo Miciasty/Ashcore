@@ -36,6 +36,7 @@ Nie są częścią publikowanego WIKI. Czytelnik otrzymuje istotne warunki w art
 
 ## Źródła integracji
 
+- [PrismJS 1.30.0](https://github.com/PrismJS/prism/tree/v1.30.0): lokalny rdzeń i gramatyki C-like/Java, z dołączoną licencją MIT. Kolory są wspólne z paletą Java szablonu WIKI.
 - [Maven Shade — przenoszenie klas](https://maven.apache.org/plugins/maven-shade-plugin/examples/class-relocation.html).
 - [Gradle — toolchains](https://docs.gradle.org/current/userguide/toolchains.html).
 - [Gradle — deklarowanie zależności](https://docs.gradle.org/current/userguide/declaring_dependencies_basics.html).

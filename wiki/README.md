@@ -4,6 +4,11 @@ English documentation for Ashcore 1.2.0, built from the shared WIKI template.
 It retains the template's dark and light themes, responsive navigation, local search,
 code copying, section links, and interactive figures. It runs entirely from local browser assets.
 
+Java examples use bundled PrismJS 1.30.0 with a shared palette for dark and light
+themes. Edit `src/syntax-java.css` to change token colors. Set `data-language="java"`
+on a code block to enable highlighting; its copy button retains the original code.
+Prism's source and MIT license are included in `assets/vendor/prism`.
+
 ## Preview
 
 From the repository root, run:

@@ -1,6 +1,7 @@
 /* Edit this source and the utility classes in HTML/JS. assets/styles.css is generated. */
 @import "tailwindcss" source(none);
 @import "./articles.css";
+@import "./syntax-java.css";
 @import "./diagrams.css";
 
 @source "../index.html";

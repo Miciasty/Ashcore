@@ -25,3 +25,12 @@ uwzględnia teraz tolerancję `1e-12`. Po poprawce cały zestaw przeszedł.
 Kontrola dotyczy strony i przykładów biblioteki. Nie uruchamiano serwera Minecraft,
 pakowania konkretnego pluginu ani workflow na GitHubie. Kod biblioteki nie był zmieniany.
 Publikacja wymaga osobnego uruchomienia po zaakceptowaniu lokalnego podglądu.
+
+## Kolorowanie Java — aktualizacja
+
+- PASS: lokalny PrismJS 1.30.0 oznaczył 4497 tokenów w 26 blokach Java; po usunięciu znaczników źródło pozostaje identyczne. Sprawdzono też escapowanie znaczników HTML wewnątrz napisów Java.
+- PASS: oba motywy pokazują osobne kolory słów kluczowych, typów, metod, napisów, liczb, adnotacji i komentarzy. Najniższy kontrast palety wynosi 4,95:1 na jasnym tle i 6,37:1 na ciemnym.
+- PASS: rzeczywiste skopiowanie i wklejenie przykładu z palety zachowuje kod; jednowierszowe pole kontrolne usuwa jedynie znaki końca linii.
+- PASS: przykład `JavaPalette.java` ze wspólnego szablonu skompilowano z `--release 11` i uruchomiono na JDK 21; wynik to `SPAWN, CAMP / 2.5`.
+- PASS: nowa zakładka szablonu i kolorowany blok Ashcore nie powodują poziomego przepełnienia przy szerokości 390 px. Konsola przeglądarki nie zgłasza błędów.
+- PASS: budowanie Ashcore i szablonu oraz kontrola odnośników. Szablon zawiera teraz 10 stron i 34 sekcje, w tym `java-palette`.

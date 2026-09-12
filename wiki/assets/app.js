@@ -128,7 +128,10 @@
       toolbar.innerHTML = `<span class="code-filename flex items-center gap-2"><span class="code-dot size-1.5 rounded-[1px] border border-accent" aria-hidden="true"></span>${escape(filename)}</span><span class="code-actions flex items-center gap-[15px]"><span class="code-language text-[9px] text-subtle uppercase">${escape(language)}</span><button class="copy-code flex items-center gap-[5px] px-0 py-px text-[10px] text-muted hover:text-foreground [&_svg]:size-3 print:hidden" type="button" aria-label="Copy ${escape(filename)}">${copyIcon}<span>Copy</span></button></span>`;
       block.prepend(toolbar);
       const plain = code.textContent;
-      if (language === 'yaml') {
+      if (language.toLowerCase() === 'java' && window.Prism?.languages.java) {
+        code.classList.add('language-java');
+        code.innerHTML = window.Prism.highlight(plain, window.Prism.languages.java, 'java');
+      } else if (language === 'yaml') {
         code.innerHTML = plain.split('\n').map(line => {
           if (line.trimStart().startsWith('#')) return `<span class="syntax-comment">${escape(line)}</span>`;
           const match = line.match(/^(\s*)([^:]+):(.*)$/);
