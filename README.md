@@ -5,6 +5,9 @@ It is the lowest Blackframe layer and has no production dependencies outside the
 
 Version **1.2.0** is available from [Maven Central](https://central.sonatype.com/artifact/dev.nasaka.blackframe/ashcore/1.2.0).
 
+The [Ashcore WIKI](wiki/README.md) contains setup guides, runnable examples, and the API directory.
+For a local preview, run `node wiki/preview.mjs` and open `http://127.0.0.1:4173`.
+
 Use it to generate terrain samples, test a player's ray against a box, or track an average without retaining every measurement.
 A box hit measures contact with that box. If the box encloses a more detailed object, the result is only a candidate for that object's hit.
 Ashcore does not compute forces, bouncing or collision response. Voxel storage belongs to Ashgrid, coordinate-frame graphs to Ashspace,
