@@ -6,7 +6,7 @@
     {
       id: 'random', category: 'Data & generation', title: 'Random and sampling',
       description: 'Repeat random draws, select weighted items, and generate samples on geometric domains.',
-      kind: 'guide', readingTime: 10,
+      kind: 'guide', readingTime: 12,
       intro: '<p>Ashcore supplies a mutable random generator, stateless seed derivation, weighted selection, and Halton sequences. These APIs return numbers and vectors for your application to use. Add the library through <a href="#/installation">Installation</a> before running the examples.</p>',
       sections: [
         {
@@ -128,6 +128,10 @@ public final class HaltonSamples {
           <p>Incremental generation has amortized O(1) work over consecutive calls, with O(log<sub>base</sub> index) worst-case work and state. Rounding can drift from direct evaluation. The mutable sequences require exclusive access and throw after <code>Integer.MAX_VALUE</code> samples until reset.</p>`
         },
         {
+          id: 'compare-samples', title: 'Compare random and Halton coverage',
+          html: '<p>Both panels contain the same number of points. The SplitMix64 panel starts with seed <code>1337</code> and draws X and Y in order. The Halton panel evaluates <code>LowDiscrepancy.halton(i, 2)</code> and <code>halton(i, 3)</code> for indices 1 through N. Its first point is <code>(0.5, 1/3)</code>.</p><div data-diagram="sampling"></div><p>Increase the sample count to reveal more of each sequence. The highlighted ring marks the last point. Changing the seed changes only the random panel; Halton samples have no seed. Clusters and gaps can occur in a finite random sample, while Halton aims for repeatable coverage. It does not guarantee a minimum distance between points.</p><p>Switch to <strong>Concentric disk</strong> to apply the same <code>mapToConcentricDisk(u, v)</code> mapping to both panels. The source square is <code>[0, 1)²</code>; the target disk has radius one. These 2D samples have no block unit until the caller scales them.</p>'
+        },
+        {
           id: 'geometric-sampling', title: 'Map samples to geometric domains',
           html: `<p><code>LowDiscrepancy</code> accepts unit-interval inputs and returns <a href="#/math">vectors</a>. Keep each input in <code>[0, 1)</code>; these mapping methods do not validate every domain condition. All radii below are one, and the direction mappings use +Y as their axis.</p>
           ${table(['Mapping', 'Result'], [
@@ -156,7 +160,7 @@ public final class HaltonSamples {
     {
       id: 'noise', category: 'Data & generation', title: 'Noise',
       description: 'Sample Perlin and hash-grid noise, combine octaves, and choose coordinate and amplitude scales.',
-      kind: 'guide', readingTime: 6,
+      kind: 'guide', readingTime: 8,
       intro: '<p>Noise maps coordinates to repeatable scalar values. Your application chooses what those coordinates and values mean: a terrain height, density, or visual parameter. Ashcore does not read a Minecraft world or place blocks.</p>',
       sections: [
         {
@@ -185,6 +189,10 @@ public final class TerrainNoise {
 }`)}
           <p>This application example interprets X and Z as block coordinates. The factor <code>0.02</code> converts them to dimensionless noise coordinates: one lattice unit spans 50 blocks. The caller chooses base height 64, vertical scale 12, and floor rounding. These values are example settings, not Ashcore defaults.</p>
           <p>Sampling the same instance at the same coordinates repeats the value without changing state. Perlin sampling allocates no objects. Its approximate output range is <code>[-1, 1]</code>, and its lattice repeats every 256 units. The 2D overload is a separate gradient calculation; do not assume it equals a 3D slice at Z = 0.</p>`
+        },
+        {
+          id: 'explore-noise', title: 'Explore frequency and octaves',
+          html: '<p>The preview uses the <code>TerrainNoise</code> example: seed <code>1337</code>, frequency <code>0.02</code>, five octaves, lacunarity <code>2</code>, and gain <code>0.5</code>. The marker samples block coordinates <code>(128, 64)</code>. X and Z locate a point on the patch; Y is its displayed height.</p><div data-diagram="noise"></div><p>Higher frequency fits more base-noise features into the same 64 × 64 block patch. Each additional octave samples at twice the previous frequency; gain multiplies its amplitude. One octave shows the base Perlin sample. Zero octaves return zero everywhere, so this height example becomes a flat surface at Y = 64.</p><p>The 2D map and 3D surface use the same values. Fractal sums are not normalized, and the color scale stays fixed when parameters change. A finite sample grid cannot show detail between its points. See <a href="#/noise?section=fractal-octaves">Combine octaves</a> for the sum and amplitude rules.</p>'
         },
         {
           id: 'coordinate-limits', title: 'Keep coordinates within the lattice',

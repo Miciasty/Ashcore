@@ -388,7 +388,9 @@
     const cleanups = hosts.map((host) => {
       const previous = mounted.get(host);
       if (previous) previous();
-      const create = { coordinates: coordinateFigure, raycast: raycastFigure }[host.dataset.diagram];
+      const create = { coordinates: coordinateFigure, raycast: raycastFigure,
+        contacts: window.WikiLabs?.contacts, sampling: window.WikiLabs?.sampling,
+        noise: window.WikiLabs?.noise }[host.dataset.diagram];
       if (!create) return () => {};
       const cleanup = create(host);
       mounted.set(host, cleanup);

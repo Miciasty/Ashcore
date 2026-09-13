@@ -1,0 +1,101 @@
+/* Shared figure layout, with colors inherited from the WIKI diagram palette. */
+@layer components {
+  .lab {
+    --lab-warm: #eac281;
+    --lab-warm-fill: rgb(234 194 129 / 12%);
+  }
+  html[data-theme="light"] .lab {
+    --lab-warm: #8a5c19;
+    --lab-warm-fill: rgb(168 112 27 / 9%);
+  }
+  .lab-heading { @apply flex flex-wrap items-center justify-between gap-2 border-b border-line px-[18px] py-3.5; }
+  .lab-heading strong { @apply text-xs font-semibold; }
+  .lab-heading > span { @apply text-[11px] text-muted; }
+  .lab-toolbar { @apply flex flex-wrap items-center justify-between gap-2 px-[18px] py-3; }
+  .lab-button {
+    @apply min-h-8 cursor-pointer appearance-none rounded-md border border-line bg-transparent px-3 py-[7px] text-[11px] leading-[1.4] text-muted;
+  }
+  .lab-button:hover, .lab-button[aria-pressed="true"] { background: var(--diagram-muted-surface); color: var(--text); }
+  .lab-button:disabled { @apply cursor-default opacity-40; }
+  .lab-choices { @apply inline-flex flex-wrap items-center rounded-[7px] border border-line bg-page p-[3px]; }
+  .lab-choices .lab-button { @apply border-0; }
+  .lab-choices .lab-button[aria-pressed="true"] { box-shadow: 0 1px 2px #00000012; }
+  .lab-scene { display: block; width: 100%; height: 360px; background: var(--diagram-plot); }
+  .lab-orbit { cursor: grab; touch-action: none; }
+  .lab-orbit:active { cursor: grabbing; }
+  .lab svg:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+  .lab-label, .lab-muted {
+    fill: var(--text); font-family: var(--font); font-size: 12px;
+    paint-order: stroke; stroke: var(--diagram-plot); stroke-width: 3px; stroke-linejoin: round;
+  }
+  .lab-muted { fill: var(--muted); font-size: 11px; }
+  .lab-strong { font-size: 16px; font-weight: 600; }
+  .lab-axis-label { font-size: 11px; }
+  .lab-grid { stroke: var(--diagram-grid); stroke-width: 1; fill: none; }
+  .lab-axis { stroke-width: 1.3; fill: none; }
+  .lab-x { stroke: var(--diagram-x); }
+  .lab-y { stroke: var(--diagram-y); }
+  .lab-z { stroke: var(--diagram-z); }
+  .lab-sphere-a { fill: var(--diagram-cube); stroke: var(--accent); stroke-width: 1.8; }
+  .lab-sphere-b { fill: var(--lab-warm-fill); stroke: var(--lab-warm); stroke-width: 1.8; }
+  .lab-wire { fill: none; stroke-width: .8; opacity: .45; }
+  .lab-center { fill: var(--text); }
+  .lab-dashed { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+  .lab-shift { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 7 5; }
+  .lab-witness-link { stroke: var(--text); stroke-width: 3; }
+  .lab-witness-a { fill: var(--accent); stroke: var(--diagram-plot); stroke-width: 1.5; }
+  .lab-witness-b { fill: var(--lab-warm); stroke: var(--diagram-plot); stroke-width: 1.5; }
+  .lab-normal { stroke: var(--text); stroke-width: 1.5; fill: none; }
+  .lab-legend { @apply flex flex-wrap gap-x-5 gap-y-2 px-[18px] py-3 text-[11px] text-muted; }
+  .lab-key-a { color: var(--accent); }
+  .lab-key-b { color: var(--lab-warm); }
+  .lab-camera { @apply flex flex-wrap items-center justify-between gap-2 border-t border-line px-[18px] py-2.5 text-[10px] text-muted; }
+  .lab-camera > div { @apply flex gap-1.5; }
+  .lab-camera[hidden] { display: none; }
+  .lab-readouts { @apply grid grid-cols-2 gap-x-5 gap-y-3 border-y border-line px-5 py-4; }
+  .lab-readouts > div { min-width: 0; }
+  .lab-readouts span { @apply block text-[11px] leading-[1.5] text-muted; }
+  .lab-readouts output { @apply mt-1 block font-mono text-xs leading-[1.6]; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .lab-controls { @apply grid grid-cols-2 items-start gap-x-6 gap-y-5 px-5 pt-5 pb-4; }
+  .lab-control { min-width: 0; }
+  .lab-control label { @apply block text-xs leading-[1.5]; }
+  .lab-control > div:first-child { @apply mb-2 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1; }
+  .lab-control output { @apply font-mono text-[11px] text-muted; font-variant-numeric: tabular-nums; }
+  .lab-control input[type="range"] { @apply m-0 block h-6 w-full cursor-pointer accent-accent; }
+  .lab-seed-row { @apply mt-2 flex flex-wrap gap-2; }
+  .lab-seed-row input {
+    @apply min-h-8 min-w-0 flex-1 rounded-md border border-line bg-page px-2 font-mono text-xs text-foreground;
+    width: 84px;
+  }
+  .lab-actions { @apply flex flex-wrap items-center justify-between gap-3 px-5 pb-4; }
+  .lab-actions > div { @apply flex flex-wrap gap-1.5; }
+  .lab-caption { @apply px-5 pb-[18px] text-[11px] leading-[1.7] text-muted; }
+  .lab-pair { @apply grid grid-cols-2 gap-3 bg-[var(--diagram-plot)] px-3 pt-3; }
+  .lab-pair > div { min-width: 0; }
+  .lab-pair h3 { margin: 0; text-align: center; font-size: 12px; line-height: 1.5; font-weight: 600; }
+  .lab-samples { display: block; width: 100%; height: auto; }
+  .lab-domain { fill: none; stroke: var(--muted); stroke-width: 1; }
+  .lab-sample { fill: var(--accent); opacity: .8; }
+  .lab-last-sample { fill: none; stroke: var(--lab-warm); stroke-width: 1.8; }
+  .lab-color-key { @apply flex items-center justify-center gap-2 px-4 py-3 font-mono text-[10px] text-muted; }
+  .lab-color-key i { width: 54px; height: 7px; background: linear-gradient(to right,rgb(35 78 115),rgb(55 163 190)); }
+  .lab-color-key i:nth-of-type(2) { background: linear-gradient(to right,rgb(55 163 190),rgb(231 219 169)); }
+  .lab-color-key span:last-child { @apply ml-2 font-sans; }
+  .lab-probe { stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 1px #111); }
+  .lab-probe-point { fill: #fff; stroke: #121216; stroke-width: 2; }
+  @media (width <= 620px) {
+    .lab-scene { height: 310px; }
+    .lab-pair { grid-template-columns: 1fr; gap: 16px; padding: 16px; }
+    .lab-samples { max-width: 340px; margin-inline: auto; }
+    .lab-controls { @apply gap-x-4 px-3.5; }
+    .lab-heading, .lab-toolbar, .lab-camera, .lab-actions, .lab-legend { @apply px-3.5; }
+    .lab-readouts { @apply gap-x-3 px-3.5; }
+    .lab-caption { @apply px-3.5; }
+    .lab-color-key { flex-wrap: wrap; }
+    .lab-color-key span:last-child { flex-basis: 100%; text-align: center; margin-left: 0; }
+  }
+  @media print {
+    .lab { --diagram-plot: #f8f9fb; --diagram-grid: #dfe2e8; --lab-warm: #8a5c19; --diagram-cube: rgb(14 139 200 / 9%); }
+    .lab-scene, .lab-pair { background: #f8f9fb; }
+  }
+}

@@ -329,7 +329,7 @@ public class IntervalExample {
     {
       id: 'collisions', category: 'Math & geometry', title: 'Collisions and contacts',
       description: 'Test closed-shape overlap, read contact witnesses, and find when translating boxes first touch.',
-      kind: 'reference', readingTime: 8,
+      kind: 'reference', readingTime: 10,
       intro: `<p>Choose an overlap test when you need a boolean. Choose a contact query when you need a penetration depth and points on the two supplied surfaces. Choose <code>SweptAABB</code> when you need the first contact time during straight translation.</p><p>These operations use the shapes you provide. They do not move entities, resolve velocities, apply forces, or build a contact manifold.</p>`,
       sections: [
         { id: 'overlap-tests', title: 'Static overlap tests', html:
@@ -378,6 +378,8 @@ public class ContactExample {
         System.out.println(contact);
     }
 }`) + `<p>The example creates a new sphere to demonstrate the witness relationship. The original sphere records remain unchanged.</p>` },
+        { id: 'explore-contact', title: 'Explore contact and tangency', html:
+          '<p>The figure starts with the same two unit spheres as <code>ContactExample</code>: A is at the origin and B is at <code>(1.5, 0, 0)</code>. Move B to compare penetration, tangency, and a miss. Positions and depth are in blocks; the normal has no unit.</p><div data-diagram="contacts"></div><p>Choose <strong>Touching</strong> to put B at X = 2: the depth becomes zero and both witnesses meet at X = 1. Choose <strong>Separated</strong> to remove the contact. <strong>Same center</strong> shows the documented +X normal for coincident centers.</p><p><strong>Show shift of A</strong> draws a dashed copy at <code>A − normal × depth</code>, keeping the queried spheres unchanged. The XY slice passes through both centers at Z = 0. Dragging the 3D view changes only the camera.</p>' },
         { id: 'containment-and-ties', title: 'Containment and tie rules', html:
           `<p><code>sphereVsSphereContact(a, b)</code> uses <code>radiusA + radiusB - centerDistance</code> as depth, including full containment. Distinct centers define the normal from A's center to B's. Coincident centers choose global +X; swapping those coincident arguments therefore does not negate the normal.</p><p><code>sphereVsBoxContact(sphere, box)</code> uses the closest box point when the center is outside. The normal points toward that point and depth is radius minus distance. For a center inside/on the box, it chooses the nearest face; depth is radius plus face clearance, and the normal opposes that face's outward direction.</p><p>Equal face clearances choose X-min, X-max, Y-min, Y-max, Z-min, then Z-max. <code>boxVsSphereContact</code> reverses the sphere/box result's normal and witnesses, including face ties. Global tie choices need not rotate with a scene.</p><p>A zero-radius point strictly inside another shape can have positive contact depth. Depth measures the displacement needed to reach tangency for these ordered shapes, not the volume of an overlap.</p>` },
         { id: 'swept-box-example', title: 'Find first contact during translation', html:

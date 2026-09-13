@@ -49,3 +49,15 @@ Publikacja wymaga osobnego uruchomienia po zaakceptowaniu lokalnego podglądu.
 - PASS: blok `Expected output` używa formatu `output`: nazwy pól są turkusowe, liczby bursztynowe, wartości logiczne fioletowe; separatory pozostają neutralne.
 - PASS: sprawdzono kolory w jasnym i ciemnym motywie oraz rzeczywiste kopiowanie wyniku. Tekst dwóch wierszy i wszystkie wartości pozostają bez zmian.
 - PASS: kontrola zachowania źródła w 37 blokach Ashcore i budowanie WIKI. Szablon zawiera również osobną stronę `output-palette` z przykładami i wartościami kolorów.
+
+## Wizualizacje kontaktów, próbek i szumu — 2026-09-13
+
+- PASS: `npm run check:diagrams` na JDK 21.0.12.1+1-LTS, kompilacja z `--release 21`. Porównano 27 224 przypadki z rzeczywistym źródłem Java: 3723 kontakty, 1280 par losowych, 256 par Haltona, 25 granicznych mapowań dysku i 21 940 wartości fBm. Maksymalna różnica bezwzględna wyniosła `8.881784197001252e-16`, przy tolerancji `1e-12`.
+- PASS: klasyfikacja kontaktu, współrzędne SplitMix64/Halton i całkowite wysokości terenu zgadzają się dokładnie. Sprawdzono zachowanie prefiksów próbek, niezależność Haltona od ziarna oraz granice dysku. Ten sam zestaw przeszedł również na JDK 25.0.2 z `--release 21`.
+- PASS: ponowna kompilacja i wykonanie wszystkich 26 przykładów Java z artykułów, z włączonymi asercjami.
+- PASS: styczność daje głębokość 0 i wspólne punkty X = 1; rozdzielenie usuwa normalną i świadków; wspólny środek daje normalną +X i głębokość 2. Przekrój XY ukrywa kontrolki kamery, a reset przywraca wartości przykładu.
+- PASS: zmiana ziarna zmienia panel SplitMix64, zachowując współrzędne panelu Haltona. Ustawienie 256 próbek pokazuje 256 punktów i jeden znacznik ostatniej próbki w każdym panelu.
+- PASS: szum w punkcie przykładu daje `0.10280` i wysokość 65; zero oktaw daje 0 i płaską wysokość 64. Obrót kamery zachowuje odczyty, a reset odtwarza parametry przykładu.
+- PASS: kontrola wizualna przy normalnej szerokości przeglądarki oraz 390 × 844, w motywach ciemnym i jasnym. Panele próbek układają się pionowo na telefonie; brak poziomego przepełnienia dokumentu. Sprawdzono również powierzchnię przy częstotliwości 0.04 i gain = 1 oraz przesunięcie kul o wspólnym środku.
+- PASS: budowanie obejmuje 15 stron, 92 sekcje i 123 odnośniki. Gotowy pakiet otwarty pod `/_site/` ładuje figurę i zachowuje wyniki szumu. Poprzedni diagram transformacji nadal się renderuje; konsola nie zgłasza błędów ani ostrzeżeń.
+- Kod produkcyjny biblioteki pozostaje bez zmian. Nowy krok porównania diagramów dodano do workflow WIKI. Push i publikacja wymagają akceptacji użytkownika po podglądzie.

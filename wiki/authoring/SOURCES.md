@@ -44,3 +44,23 @@ Nie są częścią publikowanego WIKI. Czytelnik otrzymuje istotne warunki w art
 
 Przykłady konfiguracji konsumenta są przykładami integracji, nie konfiguracją samego
 Ashcore. Sprawdzenie przykładów Java nie oznacza próby uruchomienia pluginu na serwerze.
+
+## Wizualizacje — 2026-09-13
+
+Ponownie przeczytano `DOCUMENTATION_DESIGN_TEMPLATE.md` i
+`DOCUMENTATION_DESIGN_TEMPLATE/WIKI_DESIGN_TEMPLATE.md`. Punktem odniesienia dla
+interakcji i rozdzielenia kamery od obliczeń było lokalne Ashspace WIKI:
+`assets/aabb-3d.js`, `assets/frame-chain-3d.js`, `assets/diagrams.js` i `src/diagrams.css`.
+Nowe figury Ashcore używają własnego SVG, wspólnej palety, opisanych jednostek,
+kontrolek klawiatury i osobnego resetu przykładu. Nie wymagają usług zewnętrznych.
+
+| Figura | Rzeczywiste źródło obliczeń | Zakres i uproszczenie |
+| --- | --- | --- |
+| Kontakty | `CollisionTests.sphereVsSphereContact`, `Sphere`, `Vector3` | Dwie kule o promieniu 1; A w początku, B w płaszczyźnie Z = 0. Rzut ortograficzny 3D lub przekrój XY. Przesunięta kopia ilustruje styczność, bez symulacji fizyki. |
+| Próbkowanie | `SplitMix64Random`, `DeterministicRandom.nextUnitDouble`, `LowDiscrepancy.halton`, `mapToConcentricDisk` | Po dwa losowania na punkt; bezpośredni Halton dla indeksów 1…N i baz 2/3. Do 256 punktów, kwadrat lub dysk; bez obietnicy minimalnego odstępu. |
+| Szum | `PerlinNoise.sample(double,double)`, `FractalNoise.fbm`, przykład `TerrainNoise` | Ta sama funkcja 2D zasila mapę i powierzchnię 3D; obszar X = 96…160, Z = 32…96. Siatka 65 × 65, wysokość floor(64 + raw × 12), lacunarity 2. Kolory ograniczone do skali −2…2; wartości i wysokości zachowują surową sumę. |
+
+`check-diagrams.mjs` porównuje modele JS z wynikami wywołań biblioteki w
+`DiagramFixtures.java`. Test nie używa przepisanych wzorów po stronie odniesienia.
+Zgodność dotyczy sprawdzonych, ograniczonych ustawień figur i wersji 1.2.0;
+nie rozszerza gwarancji API o bitową zgodność szumu między platformami.

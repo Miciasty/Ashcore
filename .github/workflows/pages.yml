@@ -38,6 +38,9 @@ jobs:
       - name: Compile and run Java examples
         run: npm run check:examples
         working-directory: wiki
+      - name: Compare diagram models with Java
+        run: npm run check:diagrams
+        working-directory: wiki
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:

@@ -48,6 +48,8 @@ after saving. Edit `src/*.css`, not the generated `assets/styles.css`.
 | `content/math-geometry.js` | Math, transforms, geometry, rays, and collisions |
 | `content/random-utilities.js` | Sampling, noise, statistics, and utilities |
 | `content/reference.js` | Public API directory, migration, and troubleshooting |
+| `assets/diagram-math.js` | Bounded numerical models for the interactive examples |
+| `assets/labs.js`, `src/labs.css` | Contact, sampling, and noise figures and controls |
 | `authoring/` | Source records and validation notes for maintainers |
 
 Each article has a stable page ID, description, kind, and sections with stable IDs.
@@ -60,12 +62,27 @@ Before submitting changes:
 ```shell
 npm run build
 npm run check:examples
+npm run check:diagrams
 ```
 
 The example check requires JDK 21+ on PATH or in `JAVA_HOME`. It compiles the actual
 standalone Java blocks against `src/main/java`, then runs them with assertions enabled.
 Temporary files are written beneath the ignored `.verification` directory. It does
 not require Maven, a Minecraft server, or downloaded production dependencies.
+
+The diagram check also requires JDK 21+. It compiles `authoring/DiagramFixtures.java`
+against the current library and compares the browser models with those Java results.
+It covers every selectable sphere position, ordered random/Halton samples, disk
+mapping, noise parameter combinations, and complete terrain grids. Floating-point
+comparisons use an absolute tolerance of `1e-12`; contact classification, random and
+Halton coordinates, and integer terrain heights must match exactly.
+
+The three figures sit beside their relevant examples: `#/collisions?section=explore-contact`,
+`#/random?section=compare-samples`, and `#/noise?section=explore-noise`.
+Contact and terrain views support pointer orbit, arrow keys, zoom buttons, and Home
+to reset the camera. Camera changes never change the inputs or numerical readouts.
+Each figure has a separate **Reset example** button. Keep the projection, units,
+sampling limits, and any simplifications explicit when extending a figure.
 
 `npm run build` compiles Tailwind, checks content, navigation, local assets, internal
 links, and the version against `pom.xml`, then creates `wiki/_site`. The generated CSS
